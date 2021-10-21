@@ -1,7 +1,6 @@
 import dolfinx
 import basix
-from dolfinx import Function, FunctionSpace, UnitIntervalMesh, fem
-from dolfinx.fem.assemble import assemble_matrix
+from dolfinx import Function, FunctionSpace
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
 from petsc4py import PETSc
