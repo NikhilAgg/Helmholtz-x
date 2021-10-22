@@ -84,7 +84,7 @@ N = 0.014  # [/]
 
 n_dim = N*Q_tot/U_bulk  # [J/m]
 
-n_dim /= pi/4 * 0.047**2
+n_dim /= pi/4 * 0.047
 
 """[n_dim is case dependent]
 
@@ -107,7 +107,7 @@ a_f_dim = 0.025  # [m]
 
 # print('a_f_dim = %f' % a_f_dim)
 
-x_r_dim = np.array([[0.2, 0., 0.]])  # [m]
+x_r_dim = np.array([[0.20, 0., 0.]])  # [m]
 # x_r_dim = 0.2  # [m]
 # a_r_dim = 0.0047  # [m]
 
