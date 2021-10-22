@@ -1,0 +1,12 @@
+22 Oct 2021
+-----------
+
+- The both 1D cases are working parallel and serial up to 4 cores. 
+  They are producing the same results with dolfin
+
+- The problem in the active flame function is sorted. Problem was in indices of
+  vector a. Changing indices from local to global is worked for parallel cases.
+
+- Broadcasting has been done for vector b. But, it might not work for micca and
+  real combustor geometry(since we have multiple measurement points.)
+

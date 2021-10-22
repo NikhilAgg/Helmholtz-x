@@ -15,7 +15,7 @@ from petsc4py import PETSc
 deg = 1
 
 # number of elements in each direction of mesh
-n_elem = 5
+n_elem = 10
 
 mesh = UnitIntervalMesh(MPI.COMM_WORLD, n_elem)
 
@@ -59,6 +59,7 @@ eigensolver = eps_solver(A,C,np.pi,2,print_results=False)
 
 omega, uh = normalize_eigenvector(mesh, eigensolver, 2)
 print(omega)
+print(uh.x.array)
 
 # plt.plot(p.vector[:].real)
 # plt.plot(p.vector[:].imag)

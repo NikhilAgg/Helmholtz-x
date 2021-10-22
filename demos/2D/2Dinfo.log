@@ -1,0 +1,6 @@
+22 October 2021
+
+- The passive case is maintaned to be able to run in parallel for -np=1,2,3,4.
+- The gmsh mesh is successfully imported into dolfinx script including boundaries and subdomains.
+- The parallelization problem was in eigenvector_x.py file. The new function is adapted to figure out
+  visualization problem of xdmf file.

@@ -9,8 +9,6 @@ out ~ outlet, same as d ~ downstream (of the flame)
 from math import *
 import numpy as np
 
-# import dolfin as dolf
-
 # ------------------------------------------------------------
 
 L_ref = 1.  # [m]
@@ -50,7 +48,7 @@ c_out_dim = sqrt(gamma*p_amb/rho_out_dim)  # [kg/m^3]
 # ------------------------------------------------------------
 # Reflection coefficients
 
-R_in = - 0.975 - 0.05j  # [/] #\abs(Z} e^{\angle(Z) i} 
+R_in = - 0.975 - 0.05j  # [/]
 R_out = - 0.975 - 0.05j  # [/]
 
 # Acoustic impedance
@@ -63,7 +61,7 @@ R_out = - 0.975 - 0.05j  # [/]
 
 # Specific impedance
 
-Z_in = (1 + R_in)/(1 - R_in)
+Z_in = (1 + R_in)/(1 - R_in) 
 Z_out = (1 + R_out)/(1 - R_out)
 
 # print('Z_in =', Z_in)
@@ -86,16 +84,8 @@ N = 0.014  # [/]
 
 n_dim = N*Q_tot/U_bulk  # [J/m]
 
-n_dim /= pi/4 * 0.047**2
-
-"""[n_dim is case dependent]
-
-n_dim = N*Q_tot/U_bulk  # [J/m]
-
-1D - n_dim /= pi/4 * 0.047**2
-2D - n_dim /= pi/4 * 0.047
-3D - n_dim = n_dim
-"""
+n_dim /= pi/4 * 0.047
+n_dim_ax = n_dim
 
 # print('n_dim = %f' % n_dim)
 
@@ -104,7 +94,7 @@ tau_dim = 0.0015  # [s]
 # ------------------------------------------------------------
 
 x_f_dim = np.array([[0.25, 0., 0.]])  # [m]
-a_f_dim = 0.025  # [m]
+a_f_dim = 0.025 # [m]
 # a_f_dim = 0.0047  # [m]
 
 # print('a_f_dim = %f' % a_f_dim)
@@ -145,7 +135,7 @@ c_out = c_out_dim/U_ref
 # ------------------------------------------------------------
 
 n = n_dim/(p_ref*L_ref**2)
-
+n_ax = n_dim_ax/(p_ref*L_ref**2)
 tau = tau_dim*U_ref/L_ref
 
 # ------------------------------------------------------------
@@ -160,13 +150,13 @@ a_f = a_f_dim/L_ref
 
 # c = dolf.Expression('x[0] <= x_f ? c_in : c_out', degree=0, x_f=x_f[0][0], c_in=c_in, c_out=c_out)
 
-# rho = dolf.Expression("rho_u+0.5*(rho_d-rho_u)*(1+tanh((x[0]-x_f)/a_f))", degree=1,
+# rho = dolf.Expression("rho_u+0.5*(rho_d-rho_u)*(1+tanh((x[0]-x_f)/a_f))", degree=2,
 #                  rho_u = rho_in,
 #                  rho_d = rho_out,
 #                  x_f = x_f[0][0],
 #                  a_f = a_f)
 
-# c_ = dolf.Expression("sqrt(gamma*p_amb/rho)", degree = 1,
+# c_ = dolf.Expression("sqrt(gamma*p_amb/rho)", degree = 2,
 #                gamma = gamma,
 #                p_amb = p_amb/p_ref,
 #                rho = rho) # Variable Speed of sound (m/s)

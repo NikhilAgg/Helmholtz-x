@@ -7,18 +7,19 @@ import numpy as np
 from mpi4py import MPI
 from ufl import TestFunction, TrialFunction, dx, inner, Measure
 from petsc4py import PETSc
-
+import matplotlib.pyplot as plt
 from helmholtz_x.helmholtz_pkgx.active_flame_x import ActiveFlame
 from helmholtz_x.helmholtz_pkgx.flame_transfer_function_x import n_tau
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import fixed_point_iteration_pep
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
-
+from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
 import params
+
 
 # approximation space polynomial degree
 degree = 1
 # number of elements in each direction of mesh
-n_elem = 30
+n_elem = 1000
 mesh = dolfinx.UnitIntervalMesh(MPI.COMM_WORLD, n_elem, dolfinx.cpp.mesh.GhostMode.shared_facet)
 V = FunctionSpace(mesh, ("Lagrange", degree))
 
@@ -77,3 +78,10 @@ D = ActiveFlame(mesh, subdomains,
 D.assemble_submatrices()
 
 E = fixed_point_iteration_pep(matrices, D, np.pi, nev=2, i=0, print_results= False)
+
+omega, uh = normalize_eigenvector(mesh, E, 0, degree=1, which='right')
+# print(omega)
+
+plt.plot(uh.x.array.real)
+# plt.plot(uh.x.array.imag)
+plt.savefig("1Dactive.png")
