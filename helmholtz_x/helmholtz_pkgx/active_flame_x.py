@@ -100,7 +100,7 @@ class ActiveFlame:
         dofmaps = self.V.dofmap
         indices1 = dofmaps.index_map.local_to_global(indices1)
         a = list(zip(indices1, a[indices1]))
-        print("A", a)
+        # print("A", a)
         return a
 
     def _assemble_right_vector(self, point):
@@ -135,6 +135,7 @@ class ActiveFlame:
         # Finds the basis function's derivative at point x
         # and returns the relevant dof and derivative as a list
         num_local_cells = self.mesh.topology.index_map(tdim).size_local
+        print(help(dolfinx.geometry))
         bb_tree = dolfinx.geometry.BoundingBoxTree(self.mesh, tdim, np.arange(num_local_cells, dtype=np.int32))
         cell_candidates = dolfinx.geometry.compute_collisions_point(bb_tree, point)
         # Choose one of the cells that contains the point
@@ -186,7 +187,7 @@ class ActiveFlame:
             root = MPI.COMM_WORLD.rank
         b_root = MPI.COMM_WORLD.allreduce(root, op=MPI.MAX)
         B = MPI.COMM_WORLD.bcast(B, root=b_root)
-        print("B ",B)
+        # print("B ",B)
         return B
 
     @staticmethod
@@ -335,9 +336,8 @@ class ActiveFlame:
         """ Derivative of the unsteady heat release (flame) operator D
         wrt the eigenvalue (complex angular frequency) omega."""
 
-        (D_11, D_12, D_21, D_22) = self._D_kj
         z = self.FTF(omega, k=1)
-        dD_domega = mult_complex_scalar_real_matrix(z, D_11, D_12, D_21, D_22)
+        dD_domega = z * self._D_kj
         dD_domega = self.coeff * dD_domega
 
         return dD_domega
