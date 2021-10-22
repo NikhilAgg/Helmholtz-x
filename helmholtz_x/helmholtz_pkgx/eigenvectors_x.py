@@ -1,6 +1,7 @@
 from dolfinx.fem.assemble import assemble_scalar
 import numpy as np
 from slepc4py import SLEPc
+from petsc4py import PETSc
 from dolfinx import ( Function, FunctionSpace)
 from ufl import dx, inner
 
@@ -27,7 +28,10 @@ def normalize_1(mesh, vr, degree=1):
     temp = vr.getArray()
     temp= temp/meas
 
-    u.vector.setArray(temp)
+    u_new = Function(V) # Required for Parallel runs
+    u_new.vector.setArray(temp)
+    print("New used")
+
     return u
 
 def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):

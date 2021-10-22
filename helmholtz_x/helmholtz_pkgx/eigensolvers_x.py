@@ -90,7 +90,7 @@ def pep_solver(A, B, C, target, nev, print_results=False):
 
     """
 
-    Q = SLEPc.PEP().create()
+    Q = SLEPc.PEP().create(MPI.COMM_WORLD)
 
     operators = [A, B, C]
     Q.setOperators(operators)
