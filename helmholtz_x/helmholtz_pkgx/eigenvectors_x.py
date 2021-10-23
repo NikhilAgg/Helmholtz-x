@@ -4,6 +4,7 @@ from slepc4py import SLEPc
 from petsc4py import PETSc
 from dolfinx import ( Function, FunctionSpace)
 from ufl import dx, inner
+from .petsc4py_utils import multiply, vector_matrix_vector
 
 def normalize_1(mesh, vr, degree=1):
     """ This function normalizes the eigensolution vr
@@ -30,7 +31,6 @@ def normalize_1(mesh, vr, degree=1):
 
     u_new = Function(V) # Required for Parallel runs
     u_new.vector.setArray(temp)
-    print("New used")
 
     return u
 
@@ -56,3 +56,45 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
     p = normalize_1(mesh, vr, degree)
 
     return omega, p
+
+def normalize_adjoint(omega, p_dir, p_adj, matrices, D=None):
+    """
+    p_dir and p_adj  are both: <class 'dolfinx.function.function.Function'>
+    p_dir_vec and p_adj_vec are both: <class 'petsc4py.PETSc.Vec'>
+
+    """
+
+    B = matrices.B
+
+    p_dir_vec = p_dir.vector
+    p_adj_vec = p_adj.vector
+
+    if not B and not D:
+        print('not B and not D: return None')
+        return None
+    elif B and not D:
+        # B + 2 \omega C
+        dL_domega = (B +
+                     matrices.C * (2 * omega))
+    elif D and not B:
+        # 2 \omega C - D'(\omega)
+        dL_domega = (matrices.C * (2 * omega) -
+                     D.get_derivative(omega))
+    else:
+        # B + 2 \omega C - D'(\omega)
+        dL_domega = (B +
+                     matrices.C * (2 * omega) -
+                     D.get_derivative(omega))
+
+    meas = vector_matrix_vector(p_adj_vec, dL_domega, p_dir_vec)
+    # print("Normalization: ", meas)
+
+    p_adj_vec = multiply(p_adj_vec, 1 / meas.conjugate())
+
+    # meas = vector_matrix_vector(p_adj_vec, dL_domega, p_dir_vec)
+    # print(meas)
+
+    p_adj1 = p_adj.vector.copy()
+    p_adj1.setArray(p_adj_vec.getArray())
+
+    return p_adj1

@@ -6,7 +6,7 @@
 """
 
 import numpy as np
-import matplotlib.pyplot as plt
+
 
 
 def n_tau(N3, tau):
@@ -55,7 +55,8 @@ def state_space(A, b, c, d):
 if __name__ == '__main__':
 
     from scipy.io import loadmat
-
+    import matplotlib.pyplot as plt
+    
     N3_ = 1.
     tau_ = 0.003
 

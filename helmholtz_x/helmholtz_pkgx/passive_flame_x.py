@@ -136,16 +136,7 @@ class PassiveFlame:
         B.transpose(B_adj)
 
         self._B = B
-        self._B_adj = B_adj
-
-    def assemble_zB(self, z):
-
-        if self._B is None:
-            self.assemble_B()
-
-        Bz = self._B * z
-
-        return Bz            
+        self._B_adj = B_adj     
 
     def assemble_C(self):
 
@@ -154,13 +145,5 @@ class PassiveFlame:
         C.assemble()
         self._C = C
 
-    def assemble_zC(self, z):
-
-        if self._C is None:
-            self.assemble_C()
-            
-        Cz = self._C * z
-
-        return Cz 
 
 # if __name__ == '__main__':

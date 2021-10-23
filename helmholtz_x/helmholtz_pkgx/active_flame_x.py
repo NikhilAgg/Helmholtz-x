@@ -1,6 +1,6 @@
 import dolfinx
 import basix
-from dolfinx import Function, FunctionSpace
+from dolfinx import Function, FunctionSpace,geometry
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
 from petsc4py import PETSc
@@ -44,7 +44,7 @@ class ActiveFlame:
         self.v = TestFunction(self.V)
 
         for fl, x in enumerate(self.x_r):
-            print(fl,x)
+            # print(fl,x)
             self._a[str(fl)] = self._assemble_left_vector(fl)
             self._b[str(fl)] = self._assemble_right_vector(x)
 
@@ -81,25 +81,25 @@ class ActiveFlame:
         Returns
         -------
         v : <class 'tuple'>
-            includes assembled elements of a_1 and a_2
+            includes assembled elements of a
 
         """
 
         dx = Measure("dx", subdomain_data=self.subdomains)
 
-        v = self.v
+        phi_k = self.v
 
         V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(dolfinx.Constant(self.mesh, PETSc.ScalarType(1))*dx(fl)), op=MPI.SUM)
         b = dolfinx.Function(self.V)
         b.x.array[:] = 0
         const = dolfinx.Constant(self.mesh, (1/V_fl))
-        a = dolfinx.fem.assemble_vector(b.vector, inner(const, v)*dx(fl))
+        a = dolfinx.fem.assemble_vector(b.vector, inner(const, phi_k)*dx(fl))
         b.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
         indices1 = np.array(np.flatnonzero(a.getArray()),dtype=np.int32)
         a = b.x.array
         dofmaps = self.V.dofmap
-        indices1 = dofmaps.index_map.local_to_global(indices1)
-        a = list(zip(indices1, a[indices1]))
+        global_indices = dofmaps.index_map.local_to_global(indices1)
+        a = list(zip(global_indices, a[indices1]))
         # print("A", a)
         return a
 
@@ -135,11 +135,10 @@ class ActiveFlame:
         # Finds the basis function's derivative at point x
         # and returns the relevant dof and derivative as a list
         num_local_cells = self.mesh.topology.index_map(tdim).size_local
-        print(help(dolfinx.geometry))
-        bb_tree = dolfinx.geometry.BoundingBoxTree(self.mesh, tdim, np.arange(num_local_cells, dtype=np.int32))
-        cell_candidates = dolfinx.geometry.compute_collisions_point(bb_tree, point)
+        bb_tree = geometry.BoundingBoxTree(self.mesh, tdim, np.arange(num_local_cells, dtype=np.int32))
+        cell_candidates = geometry.compute_collisions_point(bb_tree, point)
         # Choose one of the cells that contains the point
-        cell = dolfinx.geometry.select_colliding_cells(self.mesh, cell_candidates, point, 1)
+        cell = geometry.select_colliding_cells(self.mesh, cell_candidates, point, 1)
 
         # Data required for pull back of coordinate
         gdim = self.mesh.geometry.dim
@@ -182,7 +181,7 @@ class ActiveFlame:
                     B.append([global_dofs[i], d_dv[i]])
             else:
                 print(MPI.COMM_WORLD.rank, "Ghost", cell) 
-        root = -1
+        root = 0 #it was -1
         if len(B) > 0:
             root = MPI.COMM_WORLD.rank
         b_root = MPI.COMM_WORLD.allreduce(root, op=MPI.MAX)
@@ -210,9 +209,9 @@ class ActiveFlame:
 
         row = row.astype(dtype='int32')
         col = col.astype(dtype='int32')
-        print("ROW: ",row,
-        "COL: ",col,
-        "VAL: ",val)
+        # print("ROW: ",row,
+        # "COL: ",col,
+        # "VAL: ",val)
         return row, col, val
 
     def assemble_submatrices(self, problem_type='direct'):
@@ -235,7 +234,7 @@ class ActiveFlame:
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
  
-        print("LOCAL SIZE: ",local_size)
+        # print("LOCAL SIZE: ",local_size, "GLOBAL SIZE: ", global_size)
 
         row = dict()
         col = dict()
@@ -329,7 +328,7 @@ class ActiveFlame:
         elif problem_type == 'adjoint':
 
             z = np.conj(self.FTF(np.conj(omega)))
-            self._D_adj = self.coeff * z * self._D_adj
+            self._D_adj = self.coeff * z * self._D_kj_adj
 
     def get_derivative(self, omega):
 

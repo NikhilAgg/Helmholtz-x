@@ -174,3 +174,64 @@ def fixed_point_iteration_pep(operators, D, target, nev=2, i=0,
 
     return E
 
+def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
+                              tol=1e-8, maxiter=50,
+                              print_results=False,
+                              problem_type='direct',
+                              two_sided=False):
+
+    A = operators.A
+    C = operators.C
+    B = operators.B
+    if problem_type == 'adjoint':
+        B = operators.B_adj
+
+    omega = np.zeros(maxiter, dtype=complex)
+    f = np.zeros(maxiter, dtype=complex)
+    alpha = np.zeros(maxiter, dtype=complex)
+
+    E = eps_solver(A, C, target, nev, print_results=print_results)
+    eig = E.getEigenvalue(i)
+
+    omega[0] = np.sqrt(eig)
+    alpha[0] = 0.5
+
+    domega = 2 * tol
+    k = - 1
+
+    # formatting
+    s = "{:.0e}".format(tol)
+    s = int(s[-2:])
+    s = "{{:+.{}f}}".format(s)
+
+    while abs(domega) > tol:
+
+        k += 1
+
+        D.assemble_matrix(omega[k], problem_type)
+        D_Mat = D.matrix
+        if problem_type == 'adjoint':
+            D_Mat = D.adjoint_matrix
+
+        if not B:
+            nlinA = A - D_Mat
+        else:
+            nlinA = A + (omega[k] * B) - D_Mat
+
+        E = eps_solver(nlinA, C, target, nev, two_sided=two_sided, print_results=print_results)
+        eig = E.getEigenvalue(i)
+
+        f[k] = np.sqrt(eig)
+
+        if k != 0:
+            alpha[k] = 1/(1 - ((f[k] - f[k-1])/(omega[k] - omega[k-1])))
+
+        omega[k+1] = alpha[k] * f[k] + (1 - alpha[k]) * omega[k]
+
+        domega = omega[k+1] - omega[k]
+
+        print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
+            k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
+        ))
+
+    return E
