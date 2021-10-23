@@ -148,32 +148,21 @@ a_f = a_f_dim/L_ref
 
 # ------------------------------------------------------------
 
-# c = dolf.Expression('x[0] <= x_f ? c_in : c_out', degree=0, x_f=x_f[0][0], c_in=c_in, c_out=c_out)
+from dolfinx import Function,FunctionSpace
 
-# rho = dolf.Expression("rho_u+0.5*(rho_d-rho_u)*(1+tanh((x[0]-x_f)/a_f))", degree=2,
-#                  rho_u = rho_in,
-#                  rho_d = rho_out,
-#                  x_f = x_f[0][0],
-#                  a_f = a_f)
-
-# c_ = dolf.Expression("sqrt(gamma*p_amb/rho)", degree = 2,
-#                gamma = gamma,
-#                p_amb = p_amb/p_ref,
-#                rho = rho) # Variable Speed of sound (m/s)
-
-# # c_ = dolf.Expression("c_u+0.5*(c_d-c_u)*(1+tanh((x[0]-x_f)/a_f))", degree=1,
-# #                  c_u = c_in,
-# #                  c_d = c_out,
-# #                  x_f = x_f[0][0],
-# #                  a_f = a_f)
-
-
-# string_f_1d = '1 / (sigma * sqrt(2*pi)) * exp(- pow(x[0] - x_0, 2) / (2 * pow(sigma, 2)) )'
-
-# v = dolf.Expression(string_f_1d, degree=0, x_0=x_f[0][0], sigma=a_f)
-# w = dolf.Expression(string_f_1d, degree=0, x_0=x_r[0][0], sigma=a_f)
-
-# string_w_1d = '1 / (sigma * sqrt(2*pi)) * exp(- pow(x[0] - x_0, 2) / (2 * pow(sigma, 2)) )/rho'
-# w_r = dolf.Expression(string_f_1d, degree=0, x_0=x_r[0][0], sigma=a_f, rho = rho)
-
-
+def c(mesh):
+    V = FunctionSpace(mesh, ("DG", 0))
+    c = Function(V)
+    x = V.tabulate_dof_coordinates()
+    global c_in
+    global c_out
+    global x_f
+    global a_f
+    x_f = x_f[0][0]
+    for i in range(x.shape[0]):
+        midpoint = x[i,:]
+        if midpoint[0]< x_f:
+            c.vector.setValueLocal(i, c_in)
+        else:
+            c.vector.setValueLocal(i, c_out)
+    return c

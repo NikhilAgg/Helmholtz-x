@@ -156,6 +156,25 @@ a_f = a_f_dim/L_ref
 
 # ------------------------------------------------------------
 
+
+from dolfinx import Function,FunctionSpace
+
+def c(mesh):
+    V = FunctionSpace(mesh, ("DG", 0))
+    c = Function(V)
+    x = V.tabulate_dof_coordinates()
+    global c_in
+    global c_out
+    global x_f
+    global a_f
+    x_f = x_f[0][0]
+    for i in range(x.shape[0]):
+        midpoint = x[i,:]
+        if midpoint[0]< x_f:
+            c.vector.setValueLocal(i, c_in)
+        else:
+            c.vector.setValueLocal(i, c_out)
+    return c
 # c = dolf.Expression('x[0] <= x_f ? c_in : c_out', degree=0, x_f=x_f[0][0], c_in=c_in, c_out=c_out)
 
 # rho = dolf.Expression("rho_u+0.5*(rho_d-rho_u)*(1+tanh((x[0]-x_f)/a_f))", degree=1,

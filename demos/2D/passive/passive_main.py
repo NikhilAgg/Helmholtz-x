@@ -23,8 +23,8 @@ boundary_conditions = {4: {'Neumann'},
                        1: {'Robin': params.Y_in}}
 
 # Define Speed of sound
-c = dolfinx.Constant(mesh, PETSc.ScalarType(1))
-
+# c = dolfinx.Constant(mesh, PETSc.ScalarType(1))
+c = params.c(mesh)
 deg = 1
 
 matrices = PassiveFlame(mesh, facet_tags, boundary_conditions, c, degree =deg)

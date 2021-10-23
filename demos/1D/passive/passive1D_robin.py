@@ -18,7 +18,7 @@ from petsc4py import PETSc
 deg = 1
 
 # number of elements in each direction of mesh
-n_elem = 5
+n_elem = 100
 
 mesh = UnitIntervalMesh(MPI.COMM_WORLD, n_elem)
 
@@ -43,7 +43,7 @@ boundary_conditions = {1: {'Robin': params.Y_in},  # inlet
 
 # Define Speed of sound
 
-c = dolfinx.Constant(mesh, PETSc.ScalarType(1))
+c = params.c(mesh)
 
 # Introduce Passive Flame Matrices
 

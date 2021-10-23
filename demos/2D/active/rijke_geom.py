@@ -78,10 +78,10 @@ def geom_rectangle(file="MeshDir/rijke", fltk=True):
     
     gmsh.model.geo.synchronize()
 
-    gmsh.model.addPhysicalGroup(1, [1,5,8], 1)
-    gmsh.model.addPhysicalGroup(1, [9], 2)
-    gmsh.model.addPhysicalGroup(1, [10,7,3], 3)
-    gmsh.model.addPhysicalGroup(1, [4], 4)
+    gmsh.model.addPhysicalGroup(1, [1,5,8], 2) # Bottom
+    gmsh.model.addPhysicalGroup(1, [9], 3) # Outlet
+    gmsh.model.addPhysicalGroup(1, [10,7,3], 4) # Top
+    gmsh.model.addPhysicalGroup(1, [4], 1) # Inlet
 
     #Whole geometry
     gmsh.model.addPhysicalGroup(2, [1,3], 1)
@@ -127,4 +127,4 @@ def fltk_options():
 
 if __name__ == '__main__':
 
-    geom_rectangle(fltk=True)
+    geom_rectangle(file="MeshDir/rijke1", fltk=True)

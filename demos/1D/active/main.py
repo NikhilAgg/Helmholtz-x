@@ -54,8 +54,8 @@ boundary_conditions = {1: {'Robin': params.Y_in},  # inlet
 
 # Define Speed of sound
 
-c = dolfinx.Constant(mesh, PETSc.ScalarType(1))
 
+c = params.c(mesh)
 # Introduce Passive Flame Matrices
 
 matrices = PassiveFlame(mesh, facet_tag, boundary_conditions, c)
@@ -80,7 +80,7 @@ D.assemble_submatrices()
 E = fixed_point_iteration_pep(matrices, D, np.pi, nev=2, i=0, print_results= False)
 
 omega, uh = normalize_eigenvector(mesh, E, 0, degree=1, which='right')
-# print(omega)
+print(uh.vector)
 
 plt.plot(uh.x.array.real)
 # plt.plot(uh.x.array.imag)

@@ -48,7 +48,7 @@ c_out_dim = sqrt(gamma*p_amb/rho_out_dim)  # [kg/m^3]
 # ------------------------------------------------------------
 # Reflection coefficients
 
-R_in = - 0.975 - 0.05j  # [/] #\abs(Z} e^{\angle(Z) i} 
+R_in = - 0.975 - 0.05j  # [/]
 R_out = - 0.975 - 0.05j  # [/]
 
 # Acoustic impedance
@@ -84,16 +84,7 @@ N = 0.014  # [/]
 
 n_dim = N*Q_tot/U_bulk  # [J/m]
 
-n_dim /= pi/4 * 0.047**2
-
-"""[n_dim is case dependent]
-
-n_dim = N*Q_tot/U_bulk  # [J/m]
-
-1D - n_dim /= pi/4 * 0.047**2
-2D - n_dim /= pi/4 * 0.047
-3D - n_dim = n_dim
-"""
+# n_dim /= pi/4 * 0.047**2
 
 # print('n_dim = %f' % n_dim)
 
@@ -101,13 +92,13 @@ tau_dim = 0.0015  # [s]
 
 # ------------------------------------------------------------
 
-x_f_dim = np.array([[0.25, 0., 0.]])  # [m]
+x_f_dim = np.array([[0., 0., 0.25]])  # [m]  x_f_dim = [np.array([[0., 0., 0.25], [1., 0., 0.25]] ) 
 a_f_dim = 0.025  # [m]
 # a_f_dim = 0.0047  # [m]
 
 # print('a_f_dim = %f' % a_f_dim)
 
-x_r_dim = np.array([[0.20, 0., 0.]])  # [m]
+x_r_dim = np.array([[0., 0., 0.2]])  # [m]
 # x_r_dim = 0.2  # [m]
 # a_r_dim = 0.0047  # [m]
 
@@ -166,44 +157,11 @@ def c(mesh):
     global c_out
     global x_f
     global a_f
-    x_f = x_f[0][0]
+    x_f = x_f[0][2]
     for i in range(x.shape[0]):
         midpoint = x[i,:]
-        if midpoint[0]< x_f:
+        if midpoint[2]< x_f:
             c.vector.setValueLocal(i, c_in)
         else:
             c.vector.setValueLocal(i, c_out)
     return c
-
-# c = dolfinx.Constant(mesh, PETSc.ScalarType(1))
-
-# c = C_expression(c_in,c_out,x_f,a_f)
-# rho = dolf.Expression("rho_u+0.5*(rho_d-rho_u)*(1+tanh((x[0]-x_f)/a_f))", degree=1,
-#                  rho_u = rho_in,
-#                  rho_d = rho_out,
-#                  x_f = x_f[0][0],
-#                  a_f = a_f)
-
-# c = dolf.Expression('x[0] <= x_f ? c_in : c_out', degree=0, x_f=x_f[0][0], c_in=c_in, c_out=c_out)
-
-# c_ = dolf.Expression("sqrt(gamma*p_amb/rho)", degree = 1,
-#                gamma = gamma,
-#                p_amb = p_amb/p_ref,
-#                rho = rho) # Variable Speed of sound (m/s)
-
-# # c_ = dolf.Expression("c_u+0.5*(c_d-c_u)*(1+tanh((x[0]-x_f)/a_f))", degree=1,
-# #                  c_u = c_in,
-# #                  c_d = c_out,
-# #                  x_f = x_f[0][0],
-# #                  a_f = a_f)
-
-
-# string_f_1d = '1 / (sigma * sqrt(2*pi)) * exp(- pow(x[0] - x_0, 2) / (2 * pow(sigma, 2)) )'
-
-# v = dolf.Expression(string_f_1d, degree=0, x_0=x_f[0][0], sigma=a_f)
-# w = dolf.Expression(string_f_1d, degree=0, x_0=x_r[0][0], sigma=a_f)
-
-# string_w_1d = '1 / (sigma * sqrt(2*pi)) * exp(- pow(x[0] - x_0, 2) / (2 * pow(sigma, 2)) )/rho'
-# w_r = dolf.Expression(string_f_1d, degree=0, x_0=x_r[0][0], sigma=a_f, rho = rho)
-
-

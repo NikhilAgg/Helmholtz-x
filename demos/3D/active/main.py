@@ -10,24 +10,24 @@ from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
 from helmholtz_x.helmholtz_pkgx.gmsh_helpers import read_from_msh
 
 # Generate mesh
-from rijke_geom import geom_rectangle
+from rijke_geom import geom_pipe
 if MPI.COMM_WORLD.rank == 0:
-    geom_rectangle(fltk=False)
+    geom_pipe(fltk=False)
 
 # Read mesh 
-mesh, subdomains, facet_tags = read_from_msh("MeshDir/rijke.msh", cell_data=True, facet_data=True, gdim=2)
+mesh, subdomains, facet_tags = read_from_msh("MeshDir/rijke.msh", cell_data=True, facet_data=True, gdim=3)
 
 # Define the boundary conditions
 import params
-boundary_conditions = {4: {'Neumann'},
-                       3: {'Robin': params.Y_out},
-                       2: {'Neumann'},
-                       1: {'Robin': params.Y_in}}
+boundary_conditions = {1: {'Robin': params.Y_in},  # inlet
+                           2: {'Robin': params.Y_out}, # outlet
+                           3: {'Neumann'}}             # wall
+
 
 degree = 1
 
 # Define Speed of sound
-# c = dolfinx.Constant(mesh, PETSc.ScalarType(1))
+c = dolfinx.Constant(mesh, PETSc.ScalarType(1))
 c = params.c(mesh)
 
 # Introduce Passive Flame Matrices
