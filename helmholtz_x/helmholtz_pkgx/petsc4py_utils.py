@@ -1,7 +1,7 @@
 """
 All the functions in this module work in parallel
 """
-
+import numpy as np
 
 def multiply(x0, z):
     """
@@ -30,9 +30,19 @@ def conjugate(y0):
 
     """
     y1 = y0.copy()
-    y1 = y0.conjugate()
+    y1.conjugate()
 
     return y1
+
+def conjugate_function(p):
+
+    p_conj = p
+    p_conj.x.array[:] = np.conjugate(p_conj.x.array)
+    # conj_vector = p.vector.copy()
+    # conj_vector.conjugate()
+    # p_conj.vector.setArray(conj_vector.getArray())
+    
+    return p_conj
 
 def vector_vector(y0, x0):
     """
@@ -98,7 +108,7 @@ if __name__ == '__main__':
     mat.setSizes([(3, 3), (3, 3)])
     mat.setType('aij') 
     mat.setUp()
-    mat.setValues([0, 1], [2, 3], [1, 1, 1, 1]) 
+    mat.setValues([0, 1], [1, 2], [1, 1, 1, 1]) 
     mat.assemblyBegin() 
     mat.assemblyEnd()
     print(mat.getValues(range(3),range(3)))
@@ -107,6 +117,6 @@ if __name__ == '__main__':
     print(mvm)
 
     x3 = x.copy()
-    help(x3)
+
     x3.setArray(x.getArray())
     print(x3[:])

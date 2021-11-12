@@ -9,7 +9,7 @@ import numpy as np
 class PassiveFlame:
 
     def __init__(self, mesh, facet_tags, boundary_conditions,
-                 c, degree=1, constrained_domain=None):
+                 c, degree=1):
         """
         
 
@@ -29,8 +29,6 @@ class PassiveFlame:
             Speed of sound
         degree : int, optional
             degree of the basis functions. The default is 1.
-        constrained_domain : TYPE, optional
-            DESCRIPTION. The default is None.
     
         Returns
         -------
@@ -80,11 +78,9 @@ class PassiveFlame:
 
         self._A = None
         self._B = None
-        self._B_astuple = None
         self._B_adj = None
-        self._B_adj_astuple = None
         self._C = None
-        self._C_astuple = None
+
 
     @property
     def A(self):
@@ -133,10 +129,13 @@ class PassiveFlame:
             B.assemble()
 
         B_adj = B.copy()
-        B.transpose(B_adj)
+        B_adj.transpose()
+        B_adj.conjugate()
+        # B_adj = B.copy()
+        # B.transpose(B_adj)
 
         self._B = B
-        self._B_adj = B_adj     
+        self._B_adj = B_adj    
 
     def assemble_C(self):
 

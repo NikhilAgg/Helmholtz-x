@@ -3,7 +3,7 @@ import numpy as np
 from slepc4py import SLEPc
 from petsc4py import PETSc
 from dolfinx import ( Function, FunctionSpace)
-from ufl import dx, inner
+from ufl import dx
 from .petsc4py_utils import multiply, vector_matrix_vector
 
 def normalize_1(mesh, vr, degree=1):
@@ -21,18 +21,25 @@ def normalize_1(mesh, vr, degree=1):
     """
     
     V = FunctionSpace(mesh, ("CG", degree))
-    u = Function(V)
-    u.vector.setArray(vr.array)
+    p = Function(V)
+    
+    # index = int(len(vr.array)/2)
+    # angle_0 = np.arctan2(vr.array[0].imag,vr.array[0].real)
+    # p.vector.setArray(vr.array*np.exp(-angle_0*1j))
 
-    meas = assemble_scalar(inner(u,u)*dx)
+    p.vector.setArray(vr.array)
+    
+
+    meas = assemble_scalar(p*p*dx)
     meas = np.sqrt(meas)
-    temp = vr.getArray()
+    
+    temp = vr.array
     temp= temp/meas
 
     u_new = Function(V) # Required for Parallel runs
     u_new.vector.setArray(temp)
 
-    return u
+    return u_new
 
 def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
 
@@ -89,12 +96,13 @@ def normalize_adjoint(omega, p_dir, p_adj, matrices, D=None):
     meas = vector_matrix_vector(p_adj_vec, dL_domega, p_dir_vec)
     # print("Normalization: ", meas)
 
-    p_adj_vec = multiply(p_adj_vec, 1 / meas.conjugate())
+    p_adj_vec = multiply(p_adj_vec, 1 / meas)
 
     # meas = vector_matrix_vector(p_adj_vec, dL_domega, p_dir_vec)
     # print(meas)
 
-    p_adj1 = p_adj.vector.copy()
-    p_adj1.setArray(p_adj_vec.getArray())
+    p_adj1 = p_adj
+    p_adj1.vector.setArray(p_adj_vec.getArray())
+
 
     return p_adj1
