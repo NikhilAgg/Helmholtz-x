@@ -1,8 +1,5 @@
 import dolfinx
-import dolfinx.geometry
 from dolfinx import FunctionSpace, UnitIntervalMesh
-from dolfinx.fem.assemble import assemble_matrix
-import basix
 import numpy as np
 from mpi4py import MPI
 from ufl import TestFunction, TrialFunction, dx, inner, Measure
@@ -19,8 +16,8 @@ import params
 # approximation space polynomial degree
 degree = 1
 # number of elements in each direction of mesh
-n_elem = 1000
-mesh = dolfinx.UnitIntervalMesh(MPI.COMM_WORLD, n_elem, dolfinx.cpp.mesh.GhostMode.shared_facet)
+n_elem = 4000
+mesh = UnitIntervalMesh(MPI.COMM_WORLD, n_elem, dolfinx.cpp.mesh.GhostMode.shared_facet)
 V = FunctionSpace(mesh, ("Lagrange", degree))
 
 def fl_subdomain_func(x, eps=1e-16):
@@ -54,8 +51,8 @@ boundary_conditions = {1: {'Robin': params.Y_in},  # inlet
 
 # Define Speed of sound
 
-
 c = params.c(mesh)
+
 # Introduce Passive Flame Matrices
 
 matrices = PassiveFlame(mesh, facet_tag, boundary_conditions, c)
@@ -80,8 +77,10 @@ D.assemble_submatrices()
 E = fixed_point_iteration_pep(matrices, D, np.pi, nev=2, i=0, print_results= False)
 
 omega, uh = normalize_eigenvector(mesh, E, 0, degree=1, which='right')
-print(uh.vector)
 
-plt.plot(uh.x.array.real)
-# plt.plot(uh.x.array.imag)
-plt.savefig("1Dactive.png")
+plt.plot(uh.compute_point_values().real)
+plt.savefig("1Dactive_real.png")
+plt.clf()
+
+plt.plot(uh.compute_point_values().imag)
+plt.savefig("1Dactive_imag.png")

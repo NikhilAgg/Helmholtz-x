@@ -3,7 +3,7 @@ import dolfinx
 from dolfinx import  UnitIntervalMesh
 from dolfinx.io import XDMFFile, VTKFile
 from mpi4py import MPI
-# import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import eps_solver
@@ -55,15 +55,19 @@ C = matrices.C
 print(A.getSizes())
 
 
-eigensolver = eps_solver(A,C,np.pi,2,print_results=False)
-
-omega, uh = normalize_eigenvector(mesh, eigensolver, 2)
+eigensolver = eps_solver(A,C,np.pi,2,print_results=True)
+vr, vi = A.createVecs()
+omega = eigensolver.getEigenvalue(2)
+eigensolver.getEigenvector(2,vr,None)
 print(omega)
-print(uh.x.array)
+print(vr.getArray(), vi.getArray())
+# omega, uh = normalize_eigenvector(mesh, eigensolver, 2)
+# print(omega)
+# print(uh.x.array)
 
-# plt.plot(p.vector[:].real)
-# plt.plot(p.vector[:].imag)
-# plt.savefig("1Dpassive.png")
+plt.plot(vr[:].real)
+plt.plot(vr[:].imag)
+plt.savefig("1Dpassive.png")
 
 # import dolfinx.plot
 # topology, cell_types = dolfinx.plot.create_vtk_topology(mesh, mesh.topology.dim)

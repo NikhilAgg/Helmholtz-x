@@ -74,8 +74,8 @@ boundary_conditions = {1: 'Neumann',
 
 degree = 2
 
-target_dir = PETSc.ScalarType(3200+472j)
-target_adj = PETSc.ScalarType(3200-472j)
+target_dir = PETSc.ScalarType(3200)
+target_adj = PETSc.ScalarType(3200)
 c = params.c(mesh)
 
 matrices = PassiveFlame(mesh, facet_tags, boundary_conditions,
