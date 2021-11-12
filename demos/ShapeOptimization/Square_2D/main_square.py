@@ -27,19 +27,19 @@ p3 = [1., + .5]
 points  = [p0, p1, p2, p3]
 
 edges = {1:{"points":[points[0], points[1]], "parametrization": False},
-         2:{"points":[points[1], points[2]], "parametrization": True, "numctrlpoints":6},
+         2:{"points":[points[1], points[2]], "parametrization": True, "numctrlpoints":3},
          3:{"points":[points[2], points[3]], "parametrization": False},
-         4:{"points":[points[3], points[0]], "parametrization": True, "numctrlpoints":6}}
+         4:{"points":[points[3], points[0]], "parametrization": True, "numctrlpoints":3}}
 
 
 
 geometry = Geometry("MeshDir/ekrem", points, edges, lcar)
 geometry.make_mesh(False)
 
-boundary_conditions = {4: {'Neumann'},
-                       3: {'Robin': params.Y_out},
-                       2: {'Neumann'},
-                       1: {'Robin': params.Y_in}}
+boundary_conditions = {1: {'Neumann'},
+                       4: {'Robin': params.Y_out},
+                       3: {'Neumann'},
+                       2: {'Robin': params.Y_in}}
 
 
 degree = 2
@@ -71,6 +71,15 @@ shapeder = ShapeDerivatives(geometry, boundary_conditions, p_dir, p_adj_norm, c)
 shape_der_2 = shapeder(2)
 
 print(shape_der_2)
+
+print("NEW MODULE:")
+
+from helmholtz_x.geometry_pkgx.shape_derivatives_x import ShapeDerivativesParametric
+
+results = ShapeDerivativesParametric(geometry, boundary_conditions, omega_dir, p_dir, p_adj_norm, c)
+
+print(results[2])
+
 
 
 
