@@ -167,10 +167,10 @@ def fixed_point_iteration_pep(operators, D, target, nev=2, i=0,
         omega[k+1] = alpha[k] * f[k] + (1 - alpha[k]) * omega[k]
 
         domega = omega[k+1] - omega[k]
-
-        print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
-            k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
-        ))
+        if MPI.COMM_WORLD.rank == 0:
+            print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
+                k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
+            ))
 
     return E
 
@@ -229,9 +229,9 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
         omega[k+1] = alpha[k] * f[k] + (1 - alpha[k]) * omega[k]
 
         domega = omega[k+1] - omega[k]
-
-        print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
-            k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
-        ))
+        if MPI.COMM_WORLD.rank == 0:
+            print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
+                k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
+            ))
 
     return E

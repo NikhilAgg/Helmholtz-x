@@ -1,12 +1,12 @@
 import dolfinx 
-from dolfinx.fem.assemble import assemble_scalar
 import numpy as np
 import scipy.linalg
-import ufl
+
 from helmholtz_x.helmholtz_pkgx.petsc4py_utils import conjugate_function
-# Take the directional derivative of f in the facet normal direction, Dn(f) := dot(grad(f), n).
-from ufl import  FacetNormal, grad, dot, inner
-from ufl.operators import Dn 
+from dolfinx.fem.assemble import assemble_scalar
+from ufl import  FacetNormal, grad, dot, inner, Measure
+from ufl.operators import Dn #Dn(f) := dot(grad(f), n).
+from petsc4py import PETSc
 
 
 
@@ -24,8 +24,13 @@ def _shape_gradient_Neumann(c, omega, p_dir, p_adj):
 
 def _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, index):
 
+    # FIX ME FOR PARAMETRIC 3D
+    if geometry.mesh.topology.dim == 2:
+        curvature = geometry.get_curvature_field(index)
+    else:
+        curvature = 0
+
     # Equation 4.33 in thesis
-    curvature = geometry.get_curvature_field(index)
     G = -conjugate_function(p_adj) * (curvature * c ** 2 + c * Dn(c)*Dn(p_dir)) + \
         _shape_gradient_Neumann(c, omega, p_dir, p_adj) + \
          2 * _shape_gradient_Dirichlet(c, p_dir, p_adj)
@@ -41,7 +46,7 @@ def ShapeDerivativesParametric(geometry, boundary_conditions, omega, p_dir, p_ad
 
     n = FacetNormal(mesh)
     
-    ds = ufl.Measure('ds', domain = mesh, subdomain_data = facet_tags)
+    ds = Measure('ds', domain = mesh, subdomain_data = facet_tags)
 
     results = {}
 
@@ -73,38 +78,47 @@ def ShapeDerivativesParametric(geometry, boundary_conditions, omega, p_dir, p_ad
 
 def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega, 
                                p_dir1, p_dir2, p_adj1, p_adj2, c):
-
-    mesh = geometry.mesh
-    facet_tags = geometry.facet_tags
     
-    n = FacetNormal(mesh)
-    ds = ufl.Measure('ds', domain = mesh, subdomain_data = facet_tags)
+    ds = Measure('ds', domain = geometry.mesh, subdomain_data = geometry.facet_tags)
+    
+    results = {} 
 
-    Q = dolfinx.FunctionSpace(geometry.mesh, ("CG", 1))
-    C = dolfinx.Constant(geometry.mesh,1)
-    C = dolfinx.interpolate(C, Q)
-
-    for i, value in boundary_conditions.items():
-        A = assemble_scalar(C * ds(i))
+    for tag, value in boundary_conditions.items():
+        C = dolfinx.Constant(geometry.mesh, PETSc.ScalarType(1))
+        A = assemble_scalar(C * ds(tag))
         C = 1 / A
-        ## BELOW THIS LINE IS NOT IMPLEMENTED YET!
-        if value == {'Dirichlet'}:
-            #DO DEGENERACY
-            G = _shape_gradient_Dirichlet(c, p_dir1, p_adj1)
-        elif value == {'Neumann'}:
-            #DO DEGENERACY
-            G = _shape_gradient_Neumann(c, omega, p_dir1, p_adj1)
-        else :
-            #DO DEGENERACY
-            G = _shape_gradient_Robin(geometry, c, omega, p_dir1, p_adj1, i)
 
-        if len(G) == 4:
-                    # the eigenvalues are 2-fold degenerate
-                    A = np.array(([G[0], G[1]],
-                                [G[2], G[3]]))
-                    eig = scipy.linalg.eigvals(A)
-                    derivatives[j] = eig.tolist()
+        G = []
+        if value == {'Dirichlet'}:
+
+            G.append(_shape_gradient_Dirichlet(c, p_dir1, p_adj1))
+            G.append(_shape_gradient_Dirichlet(c, p_dir2, p_adj1))
+            G.append(_shape_gradient_Dirichlet(c, p_dir1, p_adj2))
+            G.append(_shape_gradient_Dirichlet(c, p_dir2, p_adj2))
+        elif value == {'Neumann'}:
+            
+            G.append(_shape_gradient_Neumann(c, omega, p_dir1, p_adj1))
+            G.append(_shape_gradient_Neumann(c, omega, p_dir2, p_adj1))
+            G.append(_shape_gradient_Neumann(c, omega, p_dir1, p_adj2))
+            G.append(_shape_gradient_Neumann(c, omega, p_dir2, p_adj2))
+        else :
+
+            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir1, p_adj1, tag))
+            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir2, p_adj1, tag))
+            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir1, p_adj2, tag))
+            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir2, p_adj2, tag))
+        
+        # the eigenvalues are 2-fold degenerate
+        for index,form in enumerate(G):
+            G[index] = assemble_scalar(C * form *ds(tag))
+        A = np.array(([G[0], G[1]],
+                      [G[2], G[3]]))
+        
+        eig = scipy.linalg.eigvals(A)
+        print("eig: ",eig)
+        results[tag] = eig.tolist()
     
+    return results
 
 
 

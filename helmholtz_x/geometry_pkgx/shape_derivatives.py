@@ -108,8 +108,8 @@ class ShapeDerivatives:
             if "Dirichlet" in self.boundary_conditions[i]:
 
                 G_dir = self.get_Dirichlet()
-                
-                print("CHECK: ", assemble_scalar( dot(V_y, n) * ds(i) ))
+                # print(assemble_scalar(G_dir*ds(i)))
+
                 gradient_x = assemble_scalar( inner(V_x, n) * G_dir * ds(i) )
                 gradient_y = assemble_scalar( inner(V_y, n) * G_dir * ds(i) )
 

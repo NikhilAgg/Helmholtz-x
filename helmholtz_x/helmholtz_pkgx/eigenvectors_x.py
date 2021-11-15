@@ -1,13 +1,14 @@
 from dolfinx.fem.assemble import assemble_scalar
 import numpy as np
 from slepc4py import SLEPc
-from petsc4py import PETSc
 from dolfinx import ( Function, FunctionSpace)
 from ufl import dx
 from .petsc4py_utils import multiply, vector_matrix_vector
 
-def normalize_1(mesh, vr, degree=1):
-    """ This function normalizes the eigensolution vr
+
+def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
+    """ 
+    This function normalizes the eigensolution vr
      which is obtained from complex slepc build
      (vi is set to zero in complex build) 
 
@@ -17,33 +18,10 @@ def normalize_1(mesh, vr, degree=1):
         degree (int, optional): degree of finite elements. Defaults to 1.
 
     Returns:
-        [type]: normalized eigensolution with \int (p p dx) = 1
+        [<class 'dolfinx.fem.function.Function'>]: normalized eigensolution such that \int (p p dx) = 1
     """
-    
-    V = FunctionSpace(mesh, ("CG", degree))
-    p = Function(V)
-    
-    # index = int(len(vr.array)/2)
-    # angle_0 = np.arctan2(vr.array[0].imag,vr.array[0].real)
-    # p.vector.setArray(vr.array*np.exp(-angle_0*1j))
 
-    p.vector.setArray(vr.array)
-    
-
-    meas = assemble_scalar(p*p*dx)
-    meas = np.sqrt(meas)
-    
-    temp = vr.array
-    temp= temp/meas
-
-    u_new = Function(V) # Required for Parallel runs
-    u_new.vector.setArray(temp)
-
-    return u_new
-
-def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
-
-    omega = 0.
+    # omega = 0.
     A = obj.getOperators()[0]
     vr, vi = A.createVecs()
 
@@ -58,18 +36,38 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
     elif isinstance(obj, SLEPc.PEP):
         eig = obj.getEigenpair(i, vr, vi)
         omega = eig
-
     
-    p = normalize_1(mesh, vr, degree)
+    V = FunctionSpace(mesh, ("CG", degree))
+    p = Function(V)
 
-    return omega, p
+    p.vector.setArray(vr.array)
 
-def normalize_adjoint(omega, p_dir, p_adj, matrices, D=None):
+    meas = assemble_scalar(p*p*dx)
+    meas = np.sqrt(meas)
+    
+    temp = vr.array
+    temp= temp/meas
+
+    p_normalized = Function(V) # Required for Parallel runs
+    p_normalized.vector.setArray(temp)
+
+    return omega, p_normalized
+
+def normalize_adjoint(omega_dir, p_dir, p_adj, matrices, D=None):
     """
-    p_dir and p_adj  are both: <class 'dolfinx.function.function.Function'>
-    p_dir_vec and p_adj_vec are both: <class 'petsc4py.PETSc.Vec'>
+    Normalizes adjoint eigenfunction for shape optimization.
 
+    Args:
+        omega_dir ([complex]): direct eigenvalue
+        p_dir ([<class 'dolfinx.fem.function.Function'>]): direct eigenfunction
+        p_adj ([<class 'dolfinx.fem.function.Function'>]): adjoint eigenfunction
+        matrices ([type]): passive_flame object
+        D ([type], optional): active flame matrix
+
+    Returns:
+        [<class 'dolfinx.fem.function.Function'>]: [description]
     """
+    
 
     B = matrices.B
 
@@ -78,28 +76,24 @@ def normalize_adjoint(omega, p_dir, p_adj, matrices, D=None):
 
     if not B and not D:
         print('not B and not D: return None')
-        return None
+        return p_adj
     elif B and not D:
         # B + 2 \omega C
         dL_domega = (B +
-                     matrices.C * (2 * omega))
+                     matrices.C * (2 * omega_dir))
     elif D and not B:
         # 2 \omega C - D'(\omega)
-        dL_domega = (matrices.C * (2 * omega) -
-                     D.get_derivative(omega))
+        dL_domega = (matrices.C * (2 * omega_dir) -
+                     D.get_derivative(omega_dir))
     else:
         # B + 2 \omega C - D'(\omega)
         dL_domega = (B +
-                     matrices.C * (2 * omega) -
-                     D.get_derivative(omega))
+                     matrices.C * (2 * omega_dir) -
+                     D.get_derivative(omega_dir))
 
     meas = vector_matrix_vector(p_adj_vec, dL_domega, p_dir_vec)
-    # print("Normalization: ", meas)
 
     p_adj_vec = multiply(p_adj_vec, 1 / meas)
-
-    # meas = vector_matrix_vector(p_adj_vec, dL_domega, p_dir_vec)
-    # print(meas)
 
     p_adj1 = p_adj
     p_adj1.vector.setArray(p_adj_vec.getArray())
