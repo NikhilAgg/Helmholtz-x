@@ -1,6 +1,6 @@
 import dolfinx
 import basix
-from dolfinx import Function, FunctionSpace,geometry
+from dolfinx import Function, FunctionSpace, geometry
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
 from petsc4py import PETSc
@@ -72,17 +72,14 @@ class ActiveFlame:
     def _assemble_left_vector(self, fl):
         """
         Assembles \int v(x) \phi_k dV
-
         Parameters
         ----------
         fl : int
             flame tag
-
         Returns
         -------
         v : <class 'tuple'>
             includes assembled elements of a
-
         """
 
         dx = Measure("dx", subdomain_data=self.subdomains)
@@ -117,12 +114,10 @@ class ActiveFlame:
         ----------
         x : np.array
             flame location vector
-
         Returns
         -------
         np.array
             Array of degree of freedoms and indices as vector b.
-
         """
         tdim = self.mesh.topology.dim
 
@@ -134,11 +129,14 @@ class ActiveFlame:
 
         # Finds the basis function's derivative at point x
         # and returns the relevant dof and derivative as a list
-        num_local_cells = self.mesh.topology.index_map(tdim).size_local
-        bb_tree = geometry.BoundingBoxTree(self.mesh, tdim, np.arange(num_local_cells, dtype=np.int32))
-        cell_candidates = geometry.compute_collisions_point(bb_tree, point)
+        bb_tree = dolfinx.geometry.BoundingBoxTree(self.mesh, tdim)
+        cell_candidates = dolfinx.geometry.compute_collisions(bb_tree, point)
         # Choose one of the cells that contains the point
-        cell = geometry.select_colliding_cells(self.mesh, cell_candidates, point, 1)
+        if tdim == 1:
+            cell = [cell_candidates.array[0]]
+        else:
+            cell = dolfinx.geometry.compute_colliding_cells(self.mesh, cell_candidates, point)
+        #cell = [cell_candidates.array[0]]
 
         # Data required for pull back of coordinate
         gdim = self.mesh.geometry.dim
@@ -152,32 +150,37 @@ class ActiveFlame:
         points_ref = np.zeros((1, tdim))
 
         # Data required for evaluation of derivative
-        ct = dolfinx.cpp.mesh.to_string(self.mesh.topology.cell_type)
+        ct = self.mesh.topology.cell_type
         element = basix.create_element(basix.finite_element.string_to_family(
-                "Lagrange", ct), basix.cell.string_to_type(ct), self.degree, basix.LagrangeVariant.equispaced)
+        "Lagrange", ct.name), basix.cell.string_to_type(ct.name), self.degree, basix.LagrangeVariant.equispaced)
         dofmaps = self.V.dofmap
         coordinate_element = basix.create_element(basix.finite_element.string_to_family(
-                "Lagrange", ct), basix.cell.string_to_type(ct), 1, basix.LagrangeVariant.equispaced)
+                "Lagrange", ct.name), basix.cell.string_to_type(ct.name), 1, basix.LagrangeVariant.equispaced)
 
         point_ref = None
         B = []
         if len(cell) > 0:
-            cell = cell[0]
             # Only add contribution if cell is owned
+            cell = cell[0]
+            
             if cell < num_local_cells:
                 # Map point in cell back to reference element
                 cell_geometry[:] = x[x_dofs[cell], :gdim]
                 point_ref = self.mesh.geometry.cmap.pull_back([point[:gdim]], cell_geometry)
                 dphi = coordinate_element.tabulate(1, point_ref)[1:,0,:]
+                dphi = dphi.reshape((dphi.shape[0], dphi.shape[1]))
+                
                 J = np.dot(cell_geometry.T, dphi.T)
                 Jinv = np.linalg.inv(J)  
 
                 cell_dofs = dofmaps.cell_dofs(cell)
+                print(cell_dofs)
                 global_dofs = dofmaps.index_map.local_to_global(cell_dofs)
                 # Compute gradient on physical element by multiplying by J^(-T)
-                d_dx = (Jinv.T @ element.tabulate(1, point_ref)[1:, 0, :]).T
+                d_dx = (Jinv.T @ dphi).T
                 d_dv = np.dot(d_dx, v)[:, 0]
-                for i in range(len(cell_dofs)):
+                print(d_dv)
+                for i in range(len(d_dv)):
                     B.append([global_dofs[i], d_dv[i]])
             else:
                 print(MPI.COMM_WORLD.rank, "Ghost", cell) 
@@ -220,7 +223,6 @@ class ActiveFlame:
         vectors a and b calculated above and generates highly sparse 
         matrix D_kj which represents active flame matrix without FTF and
         other constant multiplications.
-
         Parameters
         ----------
         problem_type : str, optional
@@ -313,11 +315,9 @@ class ActiveFlame:
             Specified problem type. The default is 'direct'.
             Matrix can be obtained by selecting problem type, other
             option is adjoint.
-
         Returns
         -------
         petsc4py.PETSc.Mat
-
         """
 
         if problem_type == 'direct':
@@ -340,6 +340,3 @@ class ActiveFlame:
         dD_domega = self.coeff * dD_domega
 
         return dD_domega
-
-
-# if __name__ == '__main__':
