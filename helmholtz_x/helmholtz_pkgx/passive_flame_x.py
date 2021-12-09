@@ -1,5 +1,5 @@
 import dolfinx
-from dolfinx import Function, FunctionSpace, UnitIntervalMesh, fem
+from dolfinx.fem import Function, FunctionSpace, DirichletBC
 from dolfinx.fem.assemble import assemble_matrix
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
@@ -64,12 +64,12 @@ class PassiveFlame:
         self.integrals_R = []
         for i in boundary_conditions:
             if 'Dirichlet' in boundary_conditions[i]:
-                u_bc = dolfinx.Function(self.V)
+                u_bc = Function(self.V)
                 u_bc.interpolate(lambda x:x[0]*0)
                 u_bc.x.scatter_forward()
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
                 dofs = dolfinx.fem.locate_dofs_topological(self.V, self.fdim, facets)
-                bc = dolfinx.DirichletBC(u_bc, dofs)
+                bc = DirichletBC(u_bc, dofs)
                 self.bcs.append(bc)
             if 'Robin' in boundary_conditions[i]:
                 Y = boundary_conditions[i]['Robin']
@@ -131,8 +131,6 @@ class PassiveFlame:
         B_adj = B.copy()
         B_adj.transpose()
         B_adj.conjugate()
-        # B_adj = B.copy()
-        # B.transpose(B_adj)
 
         self._B = B
         self._B_adj = B_adj    

@@ -1,6 +1,7 @@
 import dolfinx
 import basix
-from dolfinx import Function, FunctionSpace, geometry
+from dolfinx.fem  import Function, FunctionSpace, Constant
+from dolfinx import geometry
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
 from petsc4py import PETSc
@@ -86,10 +87,10 @@ class ActiveFlame:
 
         phi_k = self.v
 
-        V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(dolfinx.Constant(self.mesh, PETSc.ScalarType(1))*dx(fl)), op=MPI.SUM)
-        b = dolfinx.Function(self.V)
+        V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(Constant(self.mesh, PETSc.ScalarType(1))*dx(fl)), op=MPI.SUM)
+        b = Function(self.V)
         b.x.array[:] = 0
-        const = dolfinx.Constant(self.mesh, (1/V_fl))
+        const = Constant(self.mesh, (1/V_fl))
         a = dolfinx.fem.assemble_vector(b.vector, inner(const, phi_k)*dx(fl))
         b.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
         indices1 = np.array(np.flatnonzero(a.getArray()),dtype=np.int32)
@@ -151,7 +152,7 @@ class ActiveFlame:
 
         # Data required for evaluation of derivative
         ct = self.mesh.topology.cell_type
-        element = basix.create_element(basix.finite_element.string_to_family(
+        element = basix.create_element(basix.finite_element.string_to_family( #INTERESTINGLY REQUIRED FOR PARALLEL RUNS
         "Lagrange", ct.name), basix.cell.string_to_type(ct.name), self.degree, basix.LagrangeVariant.equispaced)
         dofmaps = self.V.dofmap
         coordinate_element = basix.create_element(basix.finite_element.string_to_family(
@@ -174,12 +175,10 @@ class ActiveFlame:
                 Jinv = np.linalg.inv(J)  
 
                 cell_dofs = dofmaps.cell_dofs(cell)
-                print(cell_dofs)
                 global_dofs = dofmaps.index_map.local_to_global(cell_dofs)
                 # Compute gradient on physical element by multiplying by J^(-T)
                 d_dx = (Jinv.T @ dphi).T
                 d_dv = np.dot(d_dx, v)[:, 0]
-                print(d_dv)
                 for i in range(len(d_dv)):
                     B.append([global_dofs[i], d_dv[i]])
             else:
@@ -189,7 +188,7 @@ class ActiveFlame:
             root = MPI.COMM_WORLD.rank
         b_root = MPI.COMM_WORLD.allreduce(root, op=MPI.MAX)
         B = MPI.COMM_WORLD.bcast(B, root=b_root)
-        # print("B ",B)
+        print("B ",B)
         return B
 
     @staticmethod

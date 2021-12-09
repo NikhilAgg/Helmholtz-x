@@ -38,9 +38,6 @@ def conjugate_function(p):
 
     p_conj = p
     p_conj.x.array[:] = np.conjugate(p_conj.x.array)
-    # conj_vector = p.vector.copy()
-    # conj_vector.conjugate()
-    # p_conj.vector.setArray(conj_vector.getArray())
     
     return p_conj
 

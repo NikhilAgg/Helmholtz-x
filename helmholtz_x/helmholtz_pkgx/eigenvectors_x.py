@@ -1,10 +1,10 @@
 from dolfinx.fem.assemble import assemble_scalar
 import numpy as np
 from slepc4py import SLEPc
-from dolfinx import ( Function, FunctionSpace)
+from dolfinx.fem import ( Function, FunctionSpace)
 from ufl import dx
 from .petsc4py_utils import multiply, vector_matrix_vector
-
+from mpi4py import MPI
 
 def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
     """ 
@@ -41,15 +41,19 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
     p = Function(V)
 
     p.vector.setArray(vr.array)
+    p.x.scatter_forward()
 
-    meas = assemble_scalar(p*p*dx)
-    meas = np.sqrt(meas)
+    # meas = assemble_scalar(p*p*dx)
+    # meas = np.sqrt(meas)
+    meas = np.sqrt(mesh.comm.allreduce(assemble_scalar(p*p*dx), op=MPI.SUM))
+    print("MEAS:", meas)
     
     temp = vr.array
     temp= temp/meas
 
     p_normalized = Function(V) # Required for Parallel runs
     p_normalized.vector.setArray(temp)
+    p_normalized.x.scatter_forward()
 
     return omega, p_normalized
 

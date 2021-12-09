@@ -19,6 +19,8 @@ from dolfinx.io import (extract_gmsh_geometry,
                         extract_gmsh_topology_and_markers, ufl_mesh_from_gmsh)
 from dolfinx.mesh import  create_mesh, create_meshtags
 
+# mesh, cell_tags, facet_tags = read_from_msh("MeshDir/rijke.msh", cell_data=True, facet_data=True, gdim=2)
+
 def read_from_msh(filename: str, cell_data=False, facet_data=False, gdim=None):
     """
     Reads a mesh from a msh-file and returns the dolfin-x mesh.
