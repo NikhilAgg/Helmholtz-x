@@ -2,11 +2,9 @@
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import pep_solver
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector, normalize_adjoint
-from helmholtz_x.helmholtz_pkgx.petsc4py_utils import vector_matrix_vector
 from helmholtz_x.geometry_pkgx.geometry import Geometry
 from math import pi
 
-import dolfinx
 import os
 import matplotlib.pyplot as plt
 import params

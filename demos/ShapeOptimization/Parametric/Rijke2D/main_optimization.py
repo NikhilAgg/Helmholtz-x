@@ -9,7 +9,7 @@ from math import pi
 
 from mpi4py import MPI
 from helmholtz_x.geometry_pkgx.geometry import Geometry
-
+from dolfinx.mesh import MeshTags, locate_entities
 import dolfinx
 import numpy as np
 import os
@@ -43,9 +43,9 @@ def fl_subdomain_func(x, eps=1e-16):
     return np.logical_and(x_f - a_f - eps <= x, x <= x_f + a_f + eps)
 
 tdim = geometry.mesh.topology.dim
-marked_cells = dolfinx.mesh.locate_entities(geometry.mesh, tdim, fl_subdomain_func)
+marked_cells = locate_entities(geometry.mesh, tdim, fl_subdomain_func)
 fl = 0
-subdomains = dolfinx.MeshTags(geometry.mesh, tdim, marked_cells, np.full(len(marked_cells), fl, dtype=np.int32))
+subdomains = MeshTags(geometry.mesh, tdim, marked_cells, np.full(len(marked_cells), fl, dtype=np.int32))
 
 
 degree = 2
