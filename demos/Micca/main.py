@@ -1,7 +1,4 @@
-import os
-
 import dolfinx
-import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
 from helmholtz_x.helmholtz_pkgx.active_flame_x import ActiveFlame
@@ -10,7 +7,10 @@ from helmholtz_x.helmholtz_pkgx.eigensolvers_x import fixed_point_iteration_eps
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector, normalize_adjoint
 from helmholtz_x.helmholtz_pkgx.gmsh_helpers import read_from_msh
+from helmholtz_x.geometry_pkgx.xdmf_utils import load_xdmf_mesh, write_xdmf_mesh
 
+import datetime
+start_time = datetime.datetime.now()
 
 import params
 
@@ -31,8 +31,8 @@ if MPI.COMM_WORLD.rank == 0:
                 'R_out_cc': .2,
                 'l_cc': .2,
                 'l_ec': 0.041,
-                'lc_1': 1e-1,
-                'lc_2': 2e-2
+                'lc_1': 1e-2,
+                'lc_2': 1e-2
                 }
 
 
@@ -51,8 +51,14 @@ if MPI.COMM_WORLD.rank == 0:
 
         geom_1('MeshDir/Micca', fltk=False, **msh_params)
 
+
+write_xdmf_mesh("MeshDir/Micca",dimension=3)
 # Read mesh 
-mesh, subdomains, facet_tags = read_from_msh("MeshDir/Micca.msh", cell_data=True, facet_data=True, gdim=3)
+
+mesh, subdomains, facet_tags = load_xdmf_mesh("MeshDir/Micca")
+
+# Read mesh 
+# mesh, subdomains, facet_tags = read_from_msh("MeshDir/Micca.msh", cell_data=True, facet_data=True, gdim=3)
 
 # FTF = n_tau(params.N3, params.tau)
 FTF = state_space(params.S1, params.s2, params.s3, params.s4)
@@ -72,7 +78,7 @@ boundary_conditions = {1: 'Neumann',
                        10: 'Neumann',
                        11: 'Dirichlet'}
 
-degree = 2
+degree = 1
 
 target_dir = PETSc.ScalarType(3200)
 target_adj = PETSc.ScalarType(3200)
@@ -94,45 +100,42 @@ E = fixed_point_iteration_eps(matrices, D, target_dir**2, i=0, tol=1e-4)
 
 omega_1, p_1 = normalize_eigenvector(mesh, E, i=0, degree=degree)
 omega_2, p_2 = normalize_eigenvector(mesh, E, i=1, degree=degree)
+
+print("Direct Eigenvalues -> ", omega_1," =? ", omega_1)
 # ________________________________________________________________________________
 
 D.assemble_submatrices('adjoint')
 
-E_adj = fixed_point_iteration_eps(matrices, D, target_adj**2, i=1, tol=1e-4, problem_type='adjoint')
+E_adj = fixed_point_iteration_eps(matrices, D, target_adj**2, i=0, tol=1e-4, problem_type='adjoint')
 
 omega_adj_1, p_adj_1 = normalize_eigenvector(mesh, E_adj, i=0, degree=degree)
 omega_adj_2, p_adj_2 = normalize_eigenvector(mesh, E_adj, i=1, degree=degree)
 
+print("Adjoint Eigenvalues -> ", omega_adj_1," =? ", omega_adj_2)
+
 p_adj_norm_1 = normalize_adjoint(omega_1, p_1, p_adj_1, matrices, D)
 p_adj_norm_2 = normalize_adjoint(omega_2, p_2, p_adj_2, matrices, D)
 
-# Save eigenvalues, eigenvectors and shape derivatives
+# Save eigenvectors
 
-eigs = {'omega_1': omega_1,
-        'omega_2': omega_2,
-        'omega_adj_1': omega_adj_1,
-        'omega_adj_2': omega_adj_2}
-
-print(eigs)
-
-import dolfinx.io
+from dolfinx.io import XDMFFile
 
 p_1.name = "P_1_Direct"
 p_2.name = "P_2_Direct"
 p_adj_1.name = "P_1_Adjoint"
 p_adj_2.name = "P_2_Adjoint"
 
-with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "Results/p_1.xdmf", "w") as xdmf:
+with XDMFFile(MPI.COMM_WORLD, "Results/p_1.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p_1)
-with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "Results/p_2.xdmf", "w") as xdmf:
+with XDMFFile(MPI.COMM_WORLD, "Results/p_2.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p_2)
-with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "Results/p_adj_1.xdmf", "w") as xdmf:
+with XDMFFile(MPI.COMM_WORLD, "Results/p_adj_1.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p_adj_1)
-with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "Results/p_adj_2.xdmf", "w") as xdmf:
+with XDMFFile(MPI.COMM_WORLD, "Results/p_adj_2.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p_adj_2)
 
-
+print("Total Execution Time: ", datetime.datetime.now()-start_time)

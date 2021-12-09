@@ -50,7 +50,7 @@ def geom_rectangle(file="MeshDir/rijke", fltk=False):
         fltk_options()
         gmsh.fltk.run()
 
-    #gmsh.finalize()
+    gmsh.finalize()
 
 
 def fltk_options():

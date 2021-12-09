@@ -1,4 +1,4 @@
-import dolfinx 
+from dolfinx.fem import Constant 
 import numpy as np
 import scipy.linalg
 
@@ -7,7 +7,7 @@ from dolfinx.fem.assemble import assemble_scalar
 from ufl import  FacetNormal, grad, dot, inner, Measure
 from ufl.operators import Dn #Dn(f) := dot(grad(f), n).
 from petsc4py import PETSc
-
+from mpi4py import MPI
 
 
 def _shape_gradient_Dirichlet(c, p_dir, p_adj):
@@ -84,8 +84,9 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
     results = {} 
 
     for tag, value in boundary_conditions.items():
-        C = dolfinx.Constant(geometry.mesh, PETSc.ScalarType(1))
+        C = Constant(geometry.mesh, PETSc.ScalarType(1))
         A = assemble_scalar(C * ds(tag))
+        A = geometry.mesh.allreduce(A, op=MPI.SUM) # For parallel runs
         C = 1 / A
 
         G = []

@@ -1,15 +1,16 @@
 import dolfinx
-from dolfinx import Function, FunctionSpace
-from dolfinx.fem.assemble import assemble_matrix
+from dolfinx.fem import Function, FunctionSpace, Constant
+from dolfinx.generation import UnitSquareMesh
+from dolfinx.fem.assemble import assemble_matrix,assemble_scalar
 from mpi4py import MPI
-from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
+from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner,ds
 from petsc4py import PETSc
 import numpy as np
 from slepc4py import SLEPc
 
 
-mesh = dolfinx.UnitSquareMesh(MPI.COMM_WORLD, 8, 8, dolfinx.cpp.mesh.CellType.quadrilateral)
-
+mesh = UnitSquareMesh(MPI.COMM_WORLD, 8, 8, dolfinx.cpp.mesh.CellType.quadrilateral)
+dx = Measure("dx",domain=mesh)
 
 V = FunctionSpace(mesh, ("Lagrange", 1))
 
