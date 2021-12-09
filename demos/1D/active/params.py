@@ -156,7 +156,7 @@ a_f = a_f_dim/L_ref
 
 # ------------------------------------------------------------
 
-from dolfinx import Function,FunctionSpace
+from dolfinx.fem import Function,FunctionSpace
 
 def c(mesh):
     V = FunctionSpace(mesh, ("DG", 0))

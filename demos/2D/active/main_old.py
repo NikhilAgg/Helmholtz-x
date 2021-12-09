@@ -2,35 +2,32 @@ import dolfinx
 import numpy as np
 from mpi4py import MPI
 from petsc4py import PETSc
-from dolfinx.fem import Constant
 from helmholtz_x.helmholtz_pkgx.active_flame_x import ActiveFlame
 from helmholtz_x.helmholtz_pkgx.flame_transfer_function_x import n_tau
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import fixed_point_iteration_pep
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
-from helmholtz_x.geometry_pkgx.xdmf_utils import load_xdmf_mesh, write_xdmf_mesh
+from helmholtz_x.helmholtz_pkgx.gmsh_helpers import read_from_msh
 
 # Generate mesh
-from rijke_geom import geom_pipe
+from MeshDir.rijke_geom import geom_rectangle
 if MPI.COMM_WORLD.rank == 0:
-    geom_pipe(fltk=False)
+    geom_rectangle(fltk=False)
 
-write_xdmf_mesh("MeshDir/rijke",dimension=3)
 # Read mesh 
-
-mesh, subdomains, facet_tags = load_xdmf_mesh("MeshDir/rijke")
+mesh, subdomains, facet_tags = read_from_msh("MeshDir/rijke.msh", cell_data=True, facet_data=True, gdim=2)
 
 # Define the boundary conditions
 import params
-boundary_conditions = {1: {'Robin': params.Y_in},  # inlet
-                           2: {'Robin': params.Y_out}, # outlet
-                           3: {'Neumann'}}             # wall
-
+boundary_conditions = {4: {'Neumann'},
+                       3: {'Robin': params.Y_out},
+                       2: {'Neumann'},
+                       1: {'Robin': params.Y_in}}
 
 degree = 1
 
 # Define Speed of sound
-c = Constant(mesh, PETSc.ScalarType(1))
+# c = dolfinx.Constant(mesh, PETSc.ScalarType(1))
 c = params.c(mesh)
 
 # Introduce Passive Flame Matrices
@@ -59,9 +56,8 @@ E = fixed_point_iteration_pep(matrices, D, np.pi, nev=2, i=0, print_results= Fal
 omega, p = normalize_eigenvector(mesh, E, 0, degree=1, which='right')
 print(omega)
 
-import dolfinx.io
+from dolfinx.io import XDMFFile
 p.name = "Acoustic_Wave"
-with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "p.xdmf", "w") as xdmf:
-    p.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
+with XDMFFile(MPI.COMM_WORLD, "p.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p)
