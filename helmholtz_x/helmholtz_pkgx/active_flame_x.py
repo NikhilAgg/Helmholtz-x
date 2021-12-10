@@ -1,9 +1,9 @@
 import dolfinx
 import basix
 from dolfinx.fem  import Function, FunctionSpace, Constant
-from dolfinx import geometry
+from dolfinx.geometry import compute_collisions, compute_colliding_cells, BoundingBoxTree
 from mpi4py import MPI
-from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
+from ufl import Measure, FacetNormal, TestFunction, TrialFunction, inner
 from petsc4py import PETSc
 import numpy as np
 
@@ -130,15 +130,18 @@ class ActiveFlame:
 
         # Finds the basis function's derivative at point x
         # and returns the relevant dof and derivative as a list
-        bb_tree = dolfinx.geometry.BoundingBoxTree(self.mesh, tdim)
-        cell_candidates = dolfinx.geometry.compute_collisions(bb_tree, point)
+        bb_tree = BoundingBoxTree(self.mesh, tdim)
+        cell_candidates = compute_collisions(bb_tree, point)
+
         # Choose one of the cells that contains the point
         if tdim == 1:
-            cell = [cell_candidates.array[0]]
+            if len(cell_candidates.array)>0: # For 1D Parallel Runs
+                cell = [cell_candidates.array[0]]
+            else:
+                cell = []
         else:
-            cell = dolfinx.geometry.compute_colliding_cells(self.mesh, cell_candidates, point)
-        #cell = [cell_candidates.array[0]]
-
+            cell = compute_colliding_cells(self.mesh, cell_candidates, point)
+        
         # Data required for pull back of coordinate
         gdim = self.mesh.geometry.dim
         num_local_cells = self.mesh.topology.index_map(tdim).size_local
@@ -162,6 +165,7 @@ class ActiveFlame:
         B = []
         if len(cell) > 0:
             # Only add contribution if cell is owned
+            print(cell)
             cell = cell[0]
             
             if cell < num_local_cells:
@@ -170,7 +174,6 @@ class ActiveFlame:
                 point_ref = self.mesh.geometry.cmap.pull_back([point[:gdim]], cell_geometry)
                 dphi = coordinate_element.tabulate(1, point_ref)[1:,0,:]
                 dphi = dphi.reshape((dphi.shape[0], dphi.shape[1]))
-                
                 J = np.dot(cell_geometry.T, dphi.T)
                 Jinv = np.linalg.inv(J)  
 

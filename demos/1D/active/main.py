@@ -16,8 +16,8 @@ import params
 # approximation space polynomial degree
 degree = 1
 # number of elements in each direction of mesh
-n_elem = 4000
-mesh = UnitIntervalMesh(MPI.COMM_WORLD, n_elem, dolfinx.cpp.mesh.GhostMode.shared_facet)
+n_elem = 5000
+mesh = UnitIntervalMesh(MPI.COMM_WORLD, n_elem)
 V = FunctionSpace(mesh, ("Lagrange", degree))
 
 def fl_subdomain_func(x, eps=1e-16):
