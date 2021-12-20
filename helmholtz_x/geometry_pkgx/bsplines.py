@@ -229,3 +229,21 @@ if __name__ == '__main__':
     # # plt.plot(x,y)
     # plt.show()
     # # newcurve.plot_curve()
+
+    P2 = [[0.  , 0. , 0. ],
+        [ .2 , 0. , 0. ],
+        [ .4 , 0. , 0. ],
+        [ .4 ,  .05, 0.],
+        [ .4 ,  .1 , 0.],
+        [ .5 ,  .1 , 0.],
+        [ .6 ,  .1 , 0.],
+        [ .6 ,  .05, 0.],
+        [ .6 , 0.  , 0.],
+        [ .8 , 0.  , 0.],
+        [1.  , 0.  , 0.]]
+
+    newcurve3 = BSpline(P2,p=3,num_of_pts=100)
+    print(newcurve3.get_t_from_point(newcurve3.pts[45]))
+    print(newcurve3.U)
+    newcurve3.render()
+

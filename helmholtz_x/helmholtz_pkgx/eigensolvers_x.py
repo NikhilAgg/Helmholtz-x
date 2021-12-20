@@ -1,6 +1,8 @@
 from slepc4py import SLEPc
 from mpi4py import MPI
 import numpy as np
+from .eigenvectors_x import normalize_eigenvector
+from .petsc4py_utils import vector_matrix_vector
 def results(E):
 
     print()
@@ -233,5 +235,90 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
             print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
                 k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
             ))
+
+    return E
+
+
+def newton_solver(operators, D,
+           init, nev=2, i=0,
+           tol=1e-3, maxiter=100,
+           print_results=False):
+    """
+    The convergence strongly depends/relies on the initial value assigned to omega.
+    Targeting zero in the shift-and-invert (spectral) transformation or, more in general,
+    seeking for the eigenvalues nearest to zero might also be problematic.
+    The implementation uses the TwoSided option to compute the adjoint eigenvector
+    (IT HAS BEEN TESTED).
+    :param operators:
+    :param D:
+    :param init: initial value assigned to omega
+    :param nev:
+    :param i:
+    :param tol:
+    :param maxiter:
+    :param print_results:
+    :return:
+    """
+
+    A = operators.A
+    C = operators.C
+    B = operators.B
+
+    vr, vi = A.createVecs()
+
+    # mesh and degree as instance variables of ActiveFlame
+    mesh = D.mesh
+    degree = D.degree
+
+    omega = np.zeros(maxiter, dtype=complex)
+    omega[0] = init
+
+    domega = 2 * tol
+    k = 0
+
+    # formatting
+    tol_ = "{:.0e}".format(tol)
+    tol_ = int(tol_[-2:])
+    s = "{{:+.{}f}}".format(tol_)
+
+    while abs(domega) > tol:
+
+        D.assemble_matrix(omega[k])
+        if not B:
+            L = A + omega[k] ** 2 * C - D.matrix
+        
+            dL_domega = 2 * omega[k] * C - D.get_derivative(omega[k])
+        else:
+            L = A + omega[k] * B + omega[k]** 2 * C  - D.matrix
+                
+            dL_domega = B + (2 * omega[k] * C) - D.get_derivative(omega[k])
+
+        # solve the eigenvalue problem L(\omega) * p = \lambda * C * p
+        # set the target to zero (shift-and-invert)
+        E = eps_solver(L, - C, 0, nev, two_sided=True, print_results=print_results)
+
+        eig = E.getEigenvalue(i)
+
+        omega_dir, p = normalize_eigenvector(mesh, E, i, degree=1, which='right')
+
+        omega_adj, p_adj = normalize_eigenvector(mesh, E, i, degree=1, which='left')
+
+        # convert into PETSc.Vec type
+        p_vec = p.vector
+        p_adj_vec = p_adj.vector
+
+        # numerator and denominator
+        num = vector_matrix_vector(p_adj_vec, dL_domega, p_vec)
+        den = vector_matrix_vector(p_adj_vec, C, p_vec)
+
+        deig = num / den
+        domega = - eig / deig
+
+        omega[k + 1] = omega[k] + domega
+
+        print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
+            k, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)))
+
+        k += 1
 
     return E

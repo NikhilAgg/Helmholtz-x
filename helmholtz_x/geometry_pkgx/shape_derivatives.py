@@ -4,7 +4,7 @@ from dolfinx.fem.assemble import assemble_scalar
 import numpy as np
 from ufl import  FacetNormal, grad, dot, div, inner, Measure
 from ufl.operators import Dn 
-
+from mpi4py import MPI
 
 class ShapeDerivatives:
 
@@ -127,15 +127,10 @@ class ShapeDerivatives:
                 gradient_x = assemble_scalar( inner(V_x, n) * G_rob * ds(i) )
                 gradient_y = assemble_scalar( inner(V_y, n) * G_rob * ds(i) )
 
+            MPI.COMM_WORLD.allreduce(gradient_x , op=MPI.SUM) # For parallel executions
+            MPI.COMM_WORLD.allreduce(gradient_y , op=MPI.SUM) # For parallel executions
+
             shape_derivatives[j][0] = gradient_x
             shape_derivatives[j][1] = gradient_y
 
         return shape_derivatives
-
-#
-#
-
-# example
-# instance_1 = shape_derivatives_complex.Class1(geometry, boundary_conditions, p_dir, p_adj, v=v)
-# shape_der_3 = instance_1(3)
-# shape_der_4 = instance_1(4)

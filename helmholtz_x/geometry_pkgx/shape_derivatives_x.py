@@ -39,7 +39,7 @@ def _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, index):
 
 # ________________________________________________________________________________
 
-def ShapeDerivativesParametric(geometry, boundary_conditions, omega, p_dir, p_adj, c, local=False):
+def ShapeDerivativesParametric(geometry, boundary_conditions, omega, p_dir, p_adj, c):
 
     mesh = geometry.mesh
     facet_tags = geometry.facet_tags
@@ -122,26 +122,31 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
     return results
 
 
+def ShapeDerivatives3DRijke(mesh, facet_tags, boundary_conditions, omega, p_dir, p_adj, c, V):
 
-if __name__=='__main__':
-    lcar =0.2
+    n = FacetNormal(mesh)
+    
+    ds = Measure('ds', domain = mesh, subdomain_data = facet_tags)
 
-    # p0 = [0., + .0235]
-    # p1 = [0., - .0235]
-    # p2 = [1., - .0235]
-    # p3 = [1., + .0235]
+    results = {}
 
-    p0 = [0., + 0.5]
-    p1 = [0., - .5]
-    p2 = [1., - .5]
-    p3 = [1., + .5]
+    for i, value in boundary_conditions.items():
+        
+        if value == {'Dirichlet'}:
+            G = _shape_gradient_Dirichlet(c, p_dir, p_adj)
+        elif value == {'Neumann'}:
+            G = _shape_gradient_Neumann(c, omega, p_dir, p_adj)
+        else :
+            G = 1 #  FIX ME
+            # G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, i)
+            
+        
+        derivatives = np.zeros((len(V)), dtype=complex)
 
-    points  = [p0, p1, p2, p3]
+        for control_point_index in range(len(V)):
 
-    edges = {1:{"points":[points[0], points[1]], "parametrization": False},
-             2:{"points":[points[1], points[2]], "parametrization": True, "numctrlpoints":3},
-             3:{"points":[points[2], points[3]], "parametrization": False},
-             4:{"points":[points[3], points[0]], "parametrization": True, "numctrlpoints":3}}
+            derivatives[control_point_index] = assemble_scalar( inner(V[control_point_index], n) * G * ds(i) )
 
-
-
+        results[i] = derivatives
+            
+    return results

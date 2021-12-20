@@ -48,6 +48,7 @@ class ActiveFlame:
             # print(fl,x)
             self._a[str(fl)] = self._assemble_left_vector(fl)
             self._b[str(fl)] = self._assemble_right_vector(x)
+        
 
     @property
     def submatrices(self):
@@ -148,6 +149,7 @@ class ActiveFlame:
         num_dofs_x = self.mesh.geometry.dofmap.links(0).size  # NOTE: Assumes same cell geometry in whole mesh
         t_imap = self.mesh.topology.index_map(tdim)
         num_cells = t_imap.size_local + t_imap.num_ghosts
+        
         x = self.mesh.geometry.x
         x_dofs = self.mesh.geometry.dofmap.array.reshape(num_cells, num_dofs_x)
         cell_geometry = np.zeros((num_dofs_x, gdim), dtype=np.float64)
@@ -165,7 +167,7 @@ class ActiveFlame:
         B = []
         if len(cell) > 0:
             # Only add contribution if cell is owned
-            print(cell)
+            
             cell = cell[0]
             
             if cell < num_local_cells:
@@ -191,7 +193,7 @@ class ActiveFlame:
             root = MPI.COMM_WORLD.rank
         b_root = MPI.COMM_WORLD.allreduce(root, op=MPI.MAX)
         B = MPI.COMM_WORLD.bcast(B, root=b_root)
-        print("B ",B)
+        # print("B ",B)
         return B
 
     @staticmethod
@@ -299,6 +301,7 @@ class ActiveFlame:
             self._D_kj = mat
         elif problem_type == 'adjoint':
             self._D_kj_adj = mat
+        # print("Matrix D generated.")
 
     def assemble_matrix(self, omega, problem_type='direct'):
         """

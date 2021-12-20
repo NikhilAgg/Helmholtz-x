@@ -43,10 +43,8 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
     p.vector.setArray(vr.array)
     p.x.scatter_forward()
 
-    # meas = assemble_scalar(p*p*dx)
-    # meas = np.sqrt(meas)
     meas = np.sqrt(mesh.comm.allreduce(assemble_scalar(p*p*dx), op=MPI.SUM))
-    print("MEAS:", meas)
+    # print("MEAS:", meas)
     
     temp = vr.array
     temp= temp/meas

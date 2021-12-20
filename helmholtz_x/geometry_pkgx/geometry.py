@@ -237,6 +237,11 @@ if __name__ == '__main__':
     geometry.make_mesh(False)
     print(geometry.ctrl_pts)
     import matplotlib.pyplot as plt
-    plt.plot(geometry.get_displacement_field(2,1).vector.getArray())
-    plt.savefig("plot.pdf")
+    Vx, Vy = geometry.get_displacement_field(4,5)
+    from dolfinx.io import XDMFFile
+    with XDMFFile(MPI.COMM_WORLD, "Vy.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
+        xdmf.write_mesh(geometry.mesh)
+        xdmf.write_function(Vy)
+
+    
 

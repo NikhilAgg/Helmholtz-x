@@ -2,12 +2,13 @@ import dolfinx
 from mpi4py import MPI
 from petsc4py import PETSc
 from helmholtz_x.helmholtz_pkgx.active_flame_x import ActiveFlame
-from helmholtz_x.helmholtz_pkgx.flame_transfer_function_x import state_space
-from helmholtz_x.helmholtz_pkgx.eigensolvers_x import fixed_point_iteration_eps
+from helmholtz_x.helmholtz_pkgx.flame_transfer_function_x import state_space, n_tau
+from helmholtz_x.helmholtz_pkgx.eigensolvers_x import fixed_point_iteration_eps, newton_solver
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector, normalize_adjoint
 from helmholtz_x.helmholtz_pkgx.gmsh_helpers import read_from_msh
 from helmholtz_x.geometry_pkgx.xdmf_utils import load_xdmf_mesh, write_xdmf_mesh
+from dolfinx.io import XDMFFile
 
 import datetime
 start_time = datetime.datetime.now()
@@ -31,10 +32,16 @@ if MPI.COMM_WORLD.rank == 0:
                 'R_out_cc': .2,
                 'l_cc': .2,
                 'l_ec': 0.041,
-                'lc_1': 1e-2,
-                'lc_2': 1e-2
+                'lc_1': 4e-2, # 
+                'lc_2': 4e-2
                 }
-
+        # 'lc_1':  'lc_2':  'omega1' :  'omega2'  : cell_no   :    time
+        #  1e-2,    1e-2      475j        385j       116517      03:27.967718 
+        #  2e-2,    2e-2      472j        388j       26628
+        #  3e-2,    3e-2      540j        590j       15055       00:13
+        #  6e-2,    6e-2      236j        235j       9648        00:06
+        #  4e-2,    4e-2      451j        442j       11409       00:07
+        #  5e-2,    5e-2      322j        199j       9684        00:11
 
         foo = {'pl_rear': 1,
         'pl_outer': 2,
@@ -80,8 +87,8 @@ boundary_conditions = {1: 'Neumann',
 
 degree = 1
 
-target_dir = PETSc.ScalarType(3200)
-target_adj = PETSc.ScalarType(3200)
+target_dir = PETSc.ScalarType(3281+540.7j)
+target_adj = PETSc.ScalarType(3281-540.7j)
 c = params.c(mesh)
 
 matrices = PassiveFlame(mesh, facet_tags, boundary_conditions,
@@ -96,17 +103,29 @@ D = ActiveFlame(mesh, subdomains, params.x_r, params.rho_amb, params.Q_tot, para
 
 D.assemble_submatrices('direct')
 
-E = fixed_point_iteration_eps(matrices, D, target_dir**2, i=0, tol=1e-4)
+E = fixed_point_iteration_eps(matrices, D, target_dir**2, i=0, tol=1e-3)
 
 omega_1, p_1 = normalize_eigenvector(mesh, E, i=0, degree=degree)
 omega_2, p_2 = normalize_eigenvector(mesh, E, i=1, degree=degree)
 
-print("Direct Eigenvalues -> ", omega_1," =? ", omega_1)
+print("Direct Eigenvalues -> ", omega_1," =? ", omega_2)
+
+# Save eigenvectors
+
+p_1.name = "P_1_Direct"
+p_2.name = "P_2_Direct"
+
+with XDMFFile(MPI.COMM_WORLD, "Results/p_1.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
+    xdmf.write_mesh(mesh)
+    xdmf.write_function(p_1)
+with XDMFFile(MPI.COMM_WORLD, "Results/p_2.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
+    xdmf.write_mesh(mesh)
+    xdmf.write_function(p_2)
 # ________________________________________________________________________________
 
 D.assemble_submatrices('adjoint')
 
-E_adj = fixed_point_iteration_eps(matrices, D, target_adj**2, i=0, tol=1e-4, problem_type='adjoint')
+E_adj = fixed_point_iteration_eps(matrices, D, target_adj**2, i=0, tol=1e-3, problem_type='adjoint',print_results=False)
 
 omega_adj_1, p_adj_1 = normalize_eigenvector(mesh, E_adj, i=0, degree=degree)
 omega_adj_2, p_adj_2 = normalize_eigenvector(mesh, E_adj, i=1, degree=degree)
@@ -118,19 +137,9 @@ p_adj_norm_2 = normalize_adjoint(omega_2, p_2, p_adj_2, matrices, D)
 
 # Save eigenvectors
 
-from dolfinx.io import XDMFFile
-
-p_1.name = "P_1_Direct"
-p_2.name = "P_2_Direct"
 p_adj_1.name = "P_1_Adjoint"
 p_adj_2.name = "P_2_Adjoint"
 
-with XDMFFile(MPI.COMM_WORLD, "Results/p_1.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
-    xdmf.write_mesh(mesh)
-    xdmf.write_function(p_1)
-with XDMFFile(MPI.COMM_WORLD, "Results/p_2.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
-    xdmf.write_mesh(mesh)
-    xdmf.write_function(p_2)
 with XDMFFile(MPI.COMM_WORLD, "Results/p_adj_1.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p_adj_1)
