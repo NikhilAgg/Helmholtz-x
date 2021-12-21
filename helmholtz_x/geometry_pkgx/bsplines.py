@@ -216,14 +216,16 @@ if __name__ == '__main__':
     x = newcurve.pts_array[:, 0]
     y = newcurve.pts_array[:, 1]
     t = newcurve.get_t_from_point(newcurve.pts[45])
-    
-    # print(newcurve.get_curvature())
+    curvature = newcurve.get_curvature()
+    print(curvature)
     print(newcurve.get_displacement_from_point(4, newcurve.pts[45]))
     k = newcurve.get_curvature_from_point(newcurve.pts[45])
     V = newcurve.get_displacement(4)
     V2 = newcurve2.get_displacement(4)
     
-    # plt.plot(np.linspace(0,1,len(V)), V)
+    plt.plot(np.linspace(0,1,len(curvature)), curvature)
+    plt.show()
+    
     # plt.plot(np.linspace(0,1,len(V2)), V2)
     
     # # plt.plot(x,y)

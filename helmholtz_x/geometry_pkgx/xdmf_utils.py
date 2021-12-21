@@ -50,3 +50,38 @@ def load_xdmf_mesh(name):
         facet_tags = xdmf.read_meshtags(mesh, name="Grid")
     print("XDMF Mesh is loaded.")
     return mesh, cell_tags, facet_tags
+
+class XDMFReader:
+    def __init__(self, name):
+        self.name = name
+        self._mesh = None
+        self._cell_tags = None
+        self._facet_tags = None
+        self._gdim = None
+        mesh_loader_name = name + ".xdmf"
+        tag_loader_name = name + "_tags.xdmf"
+        with dolfinx.io.XDMFFile(MPI.COMM_WORLD, mesh_loader_name, "r") as xdmf:
+            self._mesh = xdmf.read_mesh(name="Grid")
+            self._cell_tags = xdmf.read_meshtags(self.mesh, name="Grid")
+        self.mesh.topology.create_connectivity(self.mesh.topology.dim, self.mesh.topology.dim-1)
+        with dolfinx.io.XDMFFile(MPI.COMM_WORLD, tag_loader_name, "r") as xdmf:
+            self._facet_tags = xdmf.read_meshtags(self.mesh, name="Grid")
+        print("XDMF Mesh is loaded.")
+
+    @property
+    def mesh(self):
+        return self._mesh
+    @property
+    def subdomains(self):
+        return self._cell_tags
+    @property
+    def facet_tags(self):
+        return self._facet_tags   
+    @property
+    def dimension(self):
+        return self._mesh.topology.dim    
+
+    def getAll(self):
+        return self.mesh, self.subdomains, self.facet_tags
+
+        

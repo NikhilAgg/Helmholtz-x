@@ -1,13 +1,18 @@
-from dolfinx.fem import Constant 
-import numpy as np
-import scipy.linalg
 
+
+from dolfinx.fem import Constant, VectorFunctionSpace, Function, DirichletBC, locate_dofs_topological, set_bc
 from helmholtz_x.helmholtz_pkgx.petsc4py_utils import conjugate_function
 from dolfinx.fem.assemble import assemble_scalar
 from ufl import  FacetNormal, grad, dot, inner, Measure
-from ufl.operators import Dn #Dn(f) := dot(grad(f), n).
+from ufl.operators import Dn, facet_avg #Dn(f) := dot(grad(f), n).
 from petsc4py import PETSc
 from mpi4py import MPI
+from geomdl import BSpline, utilities, helpers
+
+import numpy as np
+import scipy.linalg
+import os
+
 
 
 def _shape_gradient_Dirichlet(c, p_dir, p_adj):
@@ -122,31 +127,97 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
     return results
 
 
-def ShapeDerivatives3DRijke(mesh, facet_tags, boundary_conditions, omega, p_dir, p_adj, c, V):
+def ShapeDerivatives3DRijke(geometry, boundary_conditions, omega, p_dir, p_adj, c, boundary_index, control_points):
+
+    mesh = geometry.mesh
+    facet_tags = geometry.facet_tags
 
     n = FacetNormal(mesh)
     
     ds = Measure('ds', domain = mesh, subdomain_data = facet_tags)
 
-    results = {}
-
-    for i, value in boundary_conditions.items():
-        
-        if value == {'Dirichlet'}:
-            G = _shape_gradient_Dirichlet(c, p_dir, p_adj)
-        elif value == {'Neumann'}:
-            G = _shape_gradient_Neumann(c, omega, p_dir, p_adj)
-        else :
-            G = 1 #  FIX ME
-            # G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, i)
+    if boundary_conditions[boundary_index] == 'Dirichlet':
+        G = _shape_gradient_Dirichlet(c, p_dir, p_adj)
+    elif boundary_conditions[boundary_index] == 'Neumann':
+        G = _shape_gradient_Neumann(c, omega, p_dir, p_adj)
+        print("NEUMANN WORKED")
+    elif boundary_conditions[boundary_index]['Robin'] :
+        print("ROBIN WORKED")
+        G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, boundary_index)
             
-        
-        derivatives = np.zeros((len(V)), dtype=complex)
+    Field = _displacement_field(geometry, control_points, boundary_index)
 
-        for control_point_index in range(len(V)):
+    derivatives = np.zeros((len(Field)), dtype=complex)
 
-            derivatives[control_point_index] = assemble_scalar( inner(V[control_point_index], n) * G * ds(i) )
+    for control_point_index, V in enumerate(Field):
 
-        results[i] = derivatives
+        derivatives[control_point_index] = assemble_scalar( inner(V, n) * G * ds(boundary_index) )
             
-    return results
+    return derivatives
+
+def _displacement_field(geometry,  points, boundary_index):
+    """ This function calculates displacement field as dolfinx function.
+        It only works for cylindical geometry with length L.
+
+    Args:
+ 
+        mesh ([dolfinx.mesh.Mesh ]): mesh
+        points ([int]): Control points of geometry
+        
+    Returns:
+        list of Displacement Field function for each control point [dolfinx.fem.function.Function]
+    """
+
+    # Fix file path
+    os.chdir(os.path.dirname(os.path.realpath(__file__)))
+
+    # Create a B-Spline curve instance
+    curve = BSpline.Curve()
+
+    # Set up curve
+    curve.degree = 3
+    curve.ctrlpts = points
+
+    # Auto-generate knot vector
+    curve.knotvector = utilities.generate_knot_vector(curve.degree, len(curve.ctrlpts))
+    curve.delta = 0.001
+
+    # Evaluate curve
+    curve.evaluate()
+
+    DisplacementField = [None] * len(points)
+
+    mesh = geometry.mesh
+    facet_tags = geometry.facet_tags
+    
+    for control_point_index in range(len(points)):
+
+        u = np.linspace(min(curve.knotvector),max(curve.knotvector),len(curve.evalpts))
+        V = [helpers.basis_function_one(curve.degree, curve.knotvector, control_point_index, i) for i in u]
+
+        Q = VectorFunctionSpace(mesh, ("CG", 1))
+
+        gdim = mesh.topology.dim
+
+        def V_function(x):
+            scaler = points[-1][2] # THIS MIGHT NEEDS TO BE FIXED.. Cylinder's control points should be starting from 0 to L on z-axis.
+            V_poly = np.poly1d(np.polyfit(u*scaler, np.array(V), 10))
+            theta = np.arctan2(x[1],x[0])  
+            values = np.zeros((gdim, x.shape[1]),dtype=PETSc.ScalarType)
+            values[0] = V_poly(x[2])*np.cos(theta)
+            values[1] = V_poly(x[2])*np.sin(theta)
+            return values
+
+        temp = Function(Q)
+        temp.interpolate(V_function)
+        temp.name = 'V'
+
+        facets = facet_tags.indices[facet_tags.values == boundary_index]
+        dbc = DirichletBC(temp, locate_dofs_topological(Q, gdim-1, facets))
+
+        DisplacementField[control_point_index] = Function(Q)
+        DisplacementField[control_point_index].vector.set(0)
+
+        set_bc(DisplacementField[control_point_index].vector,[dbc])
+
+    return DisplacementField
