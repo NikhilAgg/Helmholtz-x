@@ -62,7 +62,7 @@ def ShapeDerivativesParametric2D(geometry, boundary_conditions, omega, p_dir, p_
             if value == 'Dirichlet':
                 G = _shape_gradient_Dirichlet(c, p_dir, p_adj)
             elif value == 'Neumann':
-                G = _shape_gradient_Neumann(c, omega, p_dir, p_adj)
+                G = _shape_gradient_Neumann(c, p_dir, p_adj)
             else :
                 G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, i)
                 
@@ -102,10 +102,10 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
             G.append(_shape_gradient_Dirichlet(c, p_dir2, p_adj2))
         elif value == {'Neumann'}:
             
-            G.append(_shape_gradient_Neumann(c, omega, p_dir1, p_adj1))
-            G.append(_shape_gradient_Neumann(c, omega, p_dir2, p_adj1))
-            G.append(_shape_gradient_Neumann(c, omega, p_dir1, p_adj2))
-            G.append(_shape_gradient_Neumann(c, omega, p_dir2, p_adj2))
+            G.append(_shape_gradient_Neumann2(c, omega, p_dir1, p_adj1))
+            G.append(_shape_gradient_Neumann2(c, omega, p_dir2, p_adj1))
+            G.append(_shape_gradient_Neumann2(c, omega, p_dir1, p_adj2))
+            G.append(_shape_gradient_Neumann2(c, omega, p_dir2, p_adj2))
         else :
 
             G.append(_shape_gradient_Robin(geometry, c, omega, p_dir1, p_adj1, tag))
