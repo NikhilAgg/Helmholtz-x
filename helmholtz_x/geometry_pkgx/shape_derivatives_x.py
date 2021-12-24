@@ -3,7 +3,7 @@
 from dolfinx.fem import Constant, VectorFunctionSpace, Function, DirichletBC, locate_dofs_topological, set_bc
 from helmholtz_x.helmholtz_pkgx.petsc4py_utils import conjugate_function
 from dolfinx.fem.assemble import assemble_scalar
-from ufl import  FacetNormal, grad, dot, inner, Measure
+from ufl import  FacetNormal, grad, dot, inner, Measure, div
 from ufl.operators import Dn, facet_avg #Dn(f) := dot(grad(f), n).
 from petsc4py import PETSc
 from mpi4py import MPI
@@ -19,13 +19,15 @@ def _shape_gradient_Dirichlet(c, p_dir, p_adj):
     # Equation 4.34 in thesis
     return - c**2 * Dn(conjugate_function(p_adj)) * Dn (p_dir)
 
-
-def _shape_gradient_Neumann(c, omega, p_dir, p_adj):
+def _shape_gradient_Neumann(c, p_dir, p_adj):
     # Equation 4.35 in thesis
     p_adj_conj = conjugate_function(p_adj)
-    return c**2 * dot(grad(p_adj_conj), grad(p_dir)) - omega**2 * p_dir * p_adj_conj
+    return c**2 * div(p_adj_conj*grad(p_dir)) 
 
-
+def _shape_gradient_Neumann2(c, omega, p_dir, p_adj):
+    # Equation 4.36 in thesis
+    p_adj_conj = conjugate_function(p_adj)
+    return c**2 * dot(grad(p_adj_conj), grad(p_dir)) - omega**2 * p_adj_conj * p_dir  
 
 def _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, index):
 
@@ -44,7 +46,7 @@ def _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, index):
 
 # ________________________________________________________________________________
 
-def ShapeDerivativesParametric(geometry, boundary_conditions, omega, p_dir, p_adj, c):
+def ShapeDerivativesParametric2D(geometry, boundary_conditions, omega, p_dir, p_adj, c):
 
     mesh = geometry.mesh
     facet_tags = geometry.facet_tags
@@ -56,16 +58,14 @@ def ShapeDerivativesParametric(geometry, boundary_conditions, omega, p_dir, p_ad
     results = {}
 
     for i, value in boundary_conditions.items():
-        
         if i in geometry.ctrl_pts:
-            if value == {'Dirichlet'}:
+            if value == 'Dirichlet':
                 G = _shape_gradient_Dirichlet(c, p_dir, p_adj)
-            elif value == {'Neumann'}:
+            elif value == 'Neumann':
                 G = _shape_gradient_Neumann(c, omega, p_dir, p_adj)
             else :
                 G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, i)
                 
-            
             derivatives = np.zeros((len(geometry.ctrl_pts[i]),2), dtype=complex)
 
             for j in range(len(geometry.ctrl_pts[i])):
@@ -75,7 +75,6 @@ def ShapeDerivativesParametric(geometry, boundary_conditions, omega, p_dir, p_ad
                 derivatives[j][0] = assemble_scalar( inner(V_x, n) * G * ds(i) )
                 derivatives[j][1] = assemble_scalar( inner(V_y, n) * G * ds(i) )
                 
- 
             results[i] = derivatives
             
     return results
