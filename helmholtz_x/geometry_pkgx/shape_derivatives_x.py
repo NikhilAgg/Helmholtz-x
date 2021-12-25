@@ -233,7 +233,7 @@ def ShapeDerivatives3DRijke(geometry, boundary_conditions, omega, p_dir, p_adj, 
     if boundary_conditions[boundary_index] == 'Dirichlet':
         G = _shape_gradient_Dirichlet(c, p_dir, p_adj_conj)
     elif boundary_conditions[boundary_index] == 'Neumann':
-        G = _shape_gradient_Neumann(c, omega, p_dir, p_adj_conj)
+        G = _shape_gradient_Neumann2(c, omega, p_dir, p_adj_conj)
         print("NEUMANN WORKED")
     elif boundary_conditions[boundary_index]['Robin'] :
         print("ROBIN WORKED")
