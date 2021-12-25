@@ -228,14 +228,16 @@ def ShapeDerivatives3DRijke(geometry, boundary_conditions, omega, p_dir, p_adj, 
     
     ds = Measure('ds', domain = mesh, subdomain_data = facet_tags)
 
+    p_adj_conj = conjugate_function(p_adj) # it should be conjugated once
+
     if boundary_conditions[boundary_index] == 'Dirichlet':
-        G = _shape_gradient_Dirichlet(c, p_dir, p_adj)
+        G = _shape_gradient_Dirichlet(c, p_dir, p_adj_conj)
     elif boundary_conditions[boundary_index] == 'Neumann':
-        G = _shape_gradient_Neumann(c, omega, p_dir, p_adj)
+        G = _shape_gradient_Neumann(c, omega, p_dir, p_adj_conj)
         print("NEUMANN WORKED")
     elif boundary_conditions[boundary_index]['Robin'] :
         print("ROBIN WORKED")
-        G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, boundary_index)
+        G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, p_adj_conj, boundary_index)
             
     Field = _displacement_field(geometry, control_points, boundary_index)
 
