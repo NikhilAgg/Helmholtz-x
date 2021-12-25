@@ -2,7 +2,7 @@ import dolfinx
 from helmholtz_x.helmholtz_pkgx.petsc4py_utils import conjugate_function
 from dolfinx.fem.assemble import assemble_scalar
 import numpy as np
-from ufl import  FacetNormal, grad, dot, div, inner, Measure
+from ufl import  FacetNormal, grad, dot, div, inner, Measure, conditional, conj
 from ufl.operators import Dn 
 from mpi4py import MPI
 
@@ -107,25 +107,25 @@ class ShapeDerivatives:
 
             if "Dirichlet" in self.boundary_conditions[i]:
 
-                G_dir = self.get_Dirichlet()
+                G = self.get_Dirichlet()
                 # print(assemble_scalar(G_dir*ds(i)))
 
-                gradient_x = assemble_scalar( inner(V_x, n) * G_dir * ds(i) )
-                gradient_y = assemble_scalar( inner(V_y, n) * G_dir * ds(i) )
+                # gradient_x = assemble_scalar( inner(V_x, n) * G_dir * ds(i) )
+                # gradient_y = assemble_scalar( inner(V_y, n) * G_dir * ds(i) )
 
             elif "Neumann" in self.boundary_conditions[i]:
 
-                G_neu = self.get_Neumann()
+                G = self.get_Neumann()
 
-                gradient_x = assemble_scalar( inner(V_x, n) * G_neu * ds(i) )
-                gradient_y = assemble_scalar( inner(V_y, n) * G_neu * ds(i) )
+                # gradient_x = assemble_scalar( inner(V_x, n) * G_neu * ds(i) )
+                # gradient_y = assemble_scalar( inner(V_y, n) * G_neu * ds(i) )
 
             elif "Robin" in self.boundary_conditions[i]:
 
-                G_rob = self.get_Robin()
+                G = self.get_Robin()
 
-                gradient_x = assemble_scalar( inner(V_x, n) * G_rob * ds(i) )
-                gradient_y = assemble_scalar( inner(V_y, n) * G_rob * ds(i) )
+            gradient_x = assemble_scalar( inner(V_x, n) * G * ds(i) )
+            gradient_y = assemble_scalar( inner(V_y, n) * G * ds(i) )
 
             MPI.COMM_WORLD.allreduce(gradient_x , op=MPI.SUM) # For parallel executions
             MPI.COMM_WORLD.allreduce(gradient_y , op=MPI.SUM) # For parallel executions
