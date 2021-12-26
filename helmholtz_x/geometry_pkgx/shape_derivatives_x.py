@@ -182,8 +182,8 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
     for tag, value in boundary_conditions.items():
         C = Constant(geometry.mesh, PETSc.ScalarType(1))
         A = assemble_scalar(C * ds(tag))
-        A = geometry.mesh.allreduce(A, op=MPI.SUM) # For parallel runs
-        C = 1 / A
+        A = MPI.COMM_WORLD.allreduce(A, op=MPI.SUM) # For parallel runs
+        C = C / A
 
         G = []
         if value == {'Dirichlet'}:
@@ -207,12 +207,13 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
         
         # the eigenvalues are 2-fold degenerate
         for index,form in enumerate(G):
-            G[index] = assemble_scalar(C * form *ds(tag))
+            value = assemble_scalar(C * form *ds(tag))
+            G[index] = MPI.COMM_WORLD.allreduce(value, op=MPI.SUM)
         A = np.array(([G[0], G[1]],
                       [G[2], G[3]]))
         
         eig = scipy.linalg.eigvals(A)
-        print("eig: ",eig)
+        #print("eig: ",eig)
         results[tag] = eig.tolist()
     
     return results
