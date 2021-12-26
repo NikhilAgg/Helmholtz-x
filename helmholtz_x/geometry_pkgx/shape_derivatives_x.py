@@ -21,7 +21,6 @@ def _shape_gradient_Dirichlet(c, p_dir, p_adj_conj):
 
 def _shape_gradient_Neumann(c, p_dir, p_adj_conj):
     # Equation 4.35 in thesis
-    print("Neumann worked")
     # p_adj_conj = conjugate_function(p_adj)
     return  div(p_adj_conj * c**2 * grad(p_dir))
 
@@ -233,7 +232,7 @@ def ShapeDerivatives3DRijke(geometry, boundary_conditions, omega, p_dir, p_adj, 
     if boundary_conditions[boundary_index] == 'Dirichlet':
         G = _shape_gradient_Dirichlet(c, p_dir, p_adj_conj)
     elif boundary_conditions[boundary_index] == 'Neumann':
-        G = _shape_gradient_Neumann2(c, omega, p_dir, p_adj_conj)
+        G = _shape_gradient_Neumann(c, p_dir, p_adj_conj)
         print("NEUMANN WORKED")
     elif boundary_conditions[boundary_index]['Robin'] :
         print("ROBIN WORKED")
@@ -261,9 +260,6 @@ def _displacement_field(geometry,  points, boundary_index):
     Returns:
         list of Displacement Field function for each control point [dolfinx.fem.function.Function]
     """
-
-    # Fix file path
-    os.chdir(os.path.dirname(os.path.realpath(__file__)))
 
     # Create a B-Spline curve instance
     curve = BSpline.Curve()
