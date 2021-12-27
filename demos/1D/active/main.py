@@ -1,7 +1,5 @@
-import dolfinx
 from dolfinx.fem import FunctionSpace,Constant
-from dolfinx.generation import UnitIntervalMesh
-from dolfinx.mesh import MeshTags, locate_entities
+from dolfinx.mesh import MeshTags, locate_entities,create_unit_interval
 import numpy as np
 from mpi4py import MPI
 import matplotlib.pyplot as plt
@@ -17,7 +15,7 @@ import params
 degree = 1
 # number of elements in each direction of mesh
 n_elem = 5000
-mesh = UnitIntervalMesh(MPI.COMM_WORLD, n_elem)
+mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
 V = FunctionSpace(mesh, ("Lagrange", degree))
 
 def fl_subdomain_func(x, eps=1e-16):

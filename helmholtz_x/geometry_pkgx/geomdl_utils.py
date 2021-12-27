@@ -99,6 +99,7 @@ class ParametricCurveCylinderical:
 
             DisplacementField[control_point_index] = Function(Q)
             DisplacementField[control_point_index].vector.set(0)
+            DisplacementField[control_point_index].vector.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
 
             set_bc(DisplacementField[control_point_index].vector,[dbc])
 
@@ -158,6 +159,9 @@ class ParametricCurveCylinderical:
 
         Curvature = Function(V)
         Curvature.vector.set(0)
+        Curvature.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
+
+        
 
         set_bc(Curvature.vector,[dbc])
 

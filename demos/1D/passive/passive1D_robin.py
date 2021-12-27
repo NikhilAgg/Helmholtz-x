@@ -1,7 +1,6 @@
 import numpy as np
 import dolfinx
-from dolfinx.generation import  UnitIntervalMesh
-from dolfinx.mesh import MeshTags
+from dolfinx.mesh import MeshTags,create_unit_interval
 from mpi4py import MPI
 import matplotlib.pyplot as plt
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
@@ -19,7 +18,7 @@ deg = 1
 # number of elements in each direction of mesh
 n_elem = 100
 
-mesh = UnitIntervalMesh(MPI.COMM_WORLD, n_elem)
+mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
 
 boundaries = [(1, lambda x: np.isclose(x[0], 0)),
               (2, lambda x: np.isclose(x[0], 1))]

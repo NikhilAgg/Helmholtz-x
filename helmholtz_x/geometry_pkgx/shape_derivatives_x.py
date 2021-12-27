@@ -4,7 +4,7 @@ from dolfinx.fem import Constant, VectorFunctionSpace, Function, DirichletBC, lo
 from helmholtz_x.helmholtz_pkgx.petsc4py_utils import conjugate_function
 from dolfinx.fem.assemble import assemble_scalar
 from ufl import  FacetNormal, grad, dot, inner, Measure, div, variable
-from ufl.operators import Dn, facet_avg #Dn(f) := dot(grad(f), n).
+from ufl.operators import Dn #Dn(f) := dot(grad(f), n).
 from petsc4py import PETSc
 from mpi4py import MPI
 from geomdl import BSpline, utilities, helpers
@@ -38,7 +38,7 @@ def _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, p_adj_conj, index):
 
     # Equation 4.33 in thesis
     G = -p_adj_conj * (curvature * c ** 2 + c * Dn(c)*Dn(p_dir)) + \
-        _shape_gradient_Neumann(c, omega, p_dir, p_adj) + \
+        _shape_gradient_Neumann2(c, omega, p_dir, p_adj) + \
          2 * _shape_gradient_Dirichlet(c, p_dir, p_adj)
 
     return G
@@ -67,15 +67,46 @@ def ShapeDerivativesParametric2D(geometry, boundary_conditions, omega, p_dir, p_
             elif value == 'Neumann':
                 G = _shape_gradient_Neumann(c, p_dir, p_adj_conj)
             else :
-                G_robin = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, p_adj_conj, tag)
+                G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, p_adj_conj, tag)
 
             for j in range(len(geometry.ctrl_pts[tag])):
 
                 V_x, V_y = geometry.get_displacement_field(tag,j)
-                derivatives[j][0] = assemble_scalar( inner(V_x, n) * G * ds(tag))
-                derivatives[j][1] = assemble_scalar( inner(V_y, n) * G * ds(tag))
+                
+                derivatives[j][0] = MPI.COMM_WORLD.allreduce(assemble_scalar( inner(V_x, n) * G * ds(tag)), op=MPI.SUM)
+                derivatives[j][1] = MPI.COMM_WORLD.allreduce(assemble_scalar( inner(V_y, n) * G * ds(tag)), op=MPI.SUM)
             
             results[tag] = derivatives
+            
+    return results
+
+def ShapeDerivativesLocal2D(geometry, boundary_conditions, omega, p_dir, p_adj, c):
+
+    ds = Measure('ds', domain = geometry.mesh, subdomain_data = geometry.facet_tags)
+
+    p_adj_conj = conjugate_function(p_adj) # it should be conjugated once
+
+    results = {}
+
+    const = Constant(geometry.mesh, PETSc.ScalarType(1))
+
+    for tag, value in boundary_conditions.items():
+        
+        L = MPI.COMM_WORLD.allreduce(assemble_scalar(const * ds(tag)), op=MPI.SUM)
+        # print("L: ", L)
+        C = const / L
+        
+        if value == 'Dirichlet':
+            G = _shape_gradient_Dirichlet(c, p_dir, p_adj_conj)
+        elif value == 'Neumann':
+            G = _shape_gradient_Neumann2(c, omega, p_dir, p_adj_conj)
+        else :
+            curvature = 0
+            G = -p_adj_conj * (curvature * c ** 2 + c * Dn(c)*Dn(p_dir)) + \
+            _shape_gradient_Neumann2(c, omega, p_dir, p_adj_conj) + \
+            2 * _shape_gradient_Dirichlet(c, p_dir, p_adj_conj)
+        print("CHECK: ", MPI.COMM_WORLD.allreduce(assemble_scalar(G * ds(tag)), op=MPI.SUM)) 
+        results[tag] = MPI.COMM_WORLD.allreduce(assemble_scalar(C * G * ds(tag)), op=MPI.SUM)
             
     return results
 
@@ -186,13 +217,13 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
         C = C / A
 
         G = []
-        if value == {'Dirichlet'}:
+        if value == 'Dirichlet':
 
             G.append(_shape_gradient_Dirichlet(c, p_dir1, p_adj1_conj))
             G.append(_shape_gradient_Dirichlet(c, p_dir2, p_adj1_conj))
             G.append(_shape_gradient_Dirichlet(c, p_dir1, p_adj2_conj))
             G.append(_shape_gradient_Dirichlet(c, p_dir2, p_adj2_conj))
-        elif value == {'Neumann'}:
+        elif value == 'Neumann':
             
             G.append(_shape_gradient_Neumann2(c, omega, p_dir1, p_adj1_conj))
             G.append(_shape_gradient_Neumann2(c, omega, p_dir2, p_adj1_conj))
@@ -207,13 +238,13 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
         
         # the eigenvalues are 2-fold degenerate
         for index,form in enumerate(G):
-            value = assemble_scalar(C * form *ds(tag))
-            G[index] = MPI.COMM_WORLD.allreduce(value, op=MPI.SUM)
+            # value = assemble_scalar(C * form *ds(tag))
+            G[index] = MPI.COMM_WORLD.allreduce(assemble_scalar(C * form *ds(tag)), op=MPI.SUM)
         A = np.array(([G[0], G[1]],
                       [G[2], G[3]]))
         
         eig = scipy.linalg.eigvals(A)
-        #print("eig: ",eig)
+        print("eig: ",eig)
         results[tag] = eig.tolist()
     
     return results

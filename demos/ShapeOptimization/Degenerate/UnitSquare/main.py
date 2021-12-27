@@ -7,20 +7,15 @@ from helmholtz_x.helmholtz_pkgx.eigensolvers_x import pep_solver,eps_solver
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.geometry_pkgx.xdmf_utils import XDMFReader
 
-# # Generate mesh
-# from square import geom_rectangle
-# if MPI.COMM_WORLD.rank == 0:
-#     geom_rectangle(fltk=False)
-
 # Read mesh 
 geometry = XDMFReader("MeshDir/square")
 mesh, cell_tags, facet_tags = geometry.getAll()
 # Define the boundary conditions
 
-boundary_conditions = {1: {'Neumann'},
-                       2: {'Neumann'},
-                       3: {'Neumann'},
-                       4: {'Neumann'}}
+boundary_conditions = {1: 'Neumann',
+                       2: 'Neumann',
+                       3: 'Neumann',
+                       4: 'Neumann'}
 
 # Define Speed of sound
 c = dolfinx.fem.Constant(mesh, PETSc.ScalarType(1))
@@ -42,7 +37,7 @@ eigensolver = eps_solver(A, C, target, 3, two_sided=True,print_results=False)
 omega1, p_dir1 = normalize_eigenvector(mesh, eigensolver, 0,degree=deg)
 omega2, p_dir2 = normalize_eigenvector(mesh, eigensolver, 1,degree=deg)
 
-print("omega1", omega1)
+print("omega1", omega1,"omega2", omega2)
 
 omega1adj, p1adj = normalize_eigenvector(mesh, eigensolver, 0,which='left',degree=deg)
 omega2adj, p2adj = normalize_eigenvector(mesh, eigensolver, 1,which='left',degree=deg)

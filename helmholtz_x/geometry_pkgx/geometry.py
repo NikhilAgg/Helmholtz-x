@@ -5,6 +5,7 @@ import ufl
 from dolfinx.fem import FunctionSpace, Function, VectorFunctionSpace, locate_dofs_topological
 from mpi4py import MPI
 import numpy as np
+from petsc4py import PETSc
 
 class Geometry:
 
@@ -164,9 +165,12 @@ class Geometry:
 
         V_x = Function(Q)
         V_x.vector[dofs_Q] = d
+        V_x.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
 
         V_y = Function(Q)
         V_y.vector[dofs_Q] = e
+        V_y.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
+        
 
         return V_x, V_y
 

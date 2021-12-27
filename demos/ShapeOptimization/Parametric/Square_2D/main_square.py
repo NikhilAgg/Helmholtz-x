@@ -1,10 +1,11 @@
 
+from mpi4py.MPI import COMM_WORLD
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import pep_solver
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector, normalize_adjoint
 from helmholtz_x.geometry_pkgx.geometry import Geometry
 from math import pi
-
+from mpi4py import MPI
 import os
 import matplotlib.pyplot as plt
 import params
@@ -34,9 +35,9 @@ edges = {1:{"points":[points[0], points[1]], "parametrization": False},
 geometry = Geometry("MeshDir/ekrem", points, edges, lcar)
 geometry.make_mesh(False)
 
-boundary_conditions = {1: {'Neumann'},
+boundary_conditions = {1: 'Neumann',
                        4: {'Robin': params.Y_out},
-                       3: {'Neumann'},
+                       3: 'Neumann',
                        2: {'Robin': params.Y_in}}
 
 
@@ -57,8 +58,9 @@ omega_dir, p_dir = normalize_eigenvector(geometry.mesh, E, i=0, degree=degree)
 
 omega_adj, p_adj = normalize_eigenvector(geometry.mesh, E_adj, i=0, degree=degree)
 
-print("OMEGA_DIR: ", omega_dir)
-print("OMEGA_ADJ: ", omega_adj)
+if MPI.COMM_WORLD.rank == 0:
+    print("OMEGA_DIR: ", omega_dir)
+    print("OMEGA_ADJ: ", omega_adj)
 
 p_adj_norm = normalize_adjoint(omega_dir, p_dir, p_adj, matrices)
 
@@ -70,13 +72,13 @@ shape_der_2 = shapeder(2)
 
 print(shape_der_2)
 
-print("NEW MODULE:")
+# print("NEW MODULE:")
 
-from helmholtz_x.geometry_pkgx.shape_derivatives_x import ShapeDerivativesParametric
+# from helmholtz_x.geometry_pkgx.shape_derivatives_x import ShapeDerivativesParametric2D
 
-results = ShapeDerivativesParametric(geometry, boundary_conditions, omega_dir, p_dir, p_adj_norm, c)
+# results = ShapeDerivativesParametric2D(geometry, boundary_conditions, omega_dir, p_dir, p_adj_norm, c)
 
-print(results[2])
+# print(results[2])
 
 
 

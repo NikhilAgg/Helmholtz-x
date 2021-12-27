@@ -1,15 +1,15 @@
 import dolfinx
 from dolfinx.fem import Function, FunctionSpace, Constant
-from dolfinx.generation import UnitSquareMesh
+from dolfinx.mesh import create_unit_square
 from dolfinx.fem.assemble import assemble_matrix,assemble_scalar
 from mpi4py import MPI
-from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner,ds
+from ufl import Measure,  TestFunction, TrialFunction, dx, grad, inner,ds
 from petsc4py import PETSc
 import numpy as np
 from slepc4py import SLEPc
 
 
-mesh = UnitSquareMesh(MPI.COMM_WORLD, 8, 8, dolfinx.cpp.mesh.CellType.quadrilateral)
+mesh = create_unit_square(MPI.COMM_WORLD, 8, 8)
 dx = Measure("dx",domain=mesh)
 
 V = FunctionSpace(mesh, ("Lagrange", 1))
@@ -42,6 +42,7 @@ print(omega)
 
 p = Function(V)
 p.vector.setArray(vr.array)
+p.x.scatter_forward()
 import dolfinx.io
 p.name = "Acoustic_Wave"
 with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "p.xdmf", "w") as xdmf:
