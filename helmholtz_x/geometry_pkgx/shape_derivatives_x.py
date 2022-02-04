@@ -28,7 +28,7 @@ def _shape_gradient_Neumann2(c, omega, p_dir, p_adj_conj):
     # Equation 4.36 in thesis
     return c**2 * dot(grad(p_adj_conj), grad(p_dir)) - omega**2 * p_adj_conj * p_dir  
 
-def _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, p_adj_conj, index):
+def _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj_conj, index):
 
     # FIX ME FOR PARAMETRIC 3D
     if geometry.mesh.topology.dim == 2:
@@ -38,8 +38,8 @@ def _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, p_adj_conj, index):
 
     # Equation 4.33 in thesis
     G = -p_adj_conj * (curvature * c ** 2 + c * Dn(c)*Dn(p_dir)) + \
-        _shape_gradient_Neumann2(c, omega, p_dir, p_adj) + \
-         2 * _shape_gradient_Dirichlet(c, p_dir, p_adj)
+        _shape_gradient_Neumann2(c, omega, p_dir, p_adj_conj) + \
+         2 * _shape_gradient_Dirichlet(c, p_dir, p_adj_conj)
 
     return G
 
@@ -67,7 +67,7 @@ def ShapeDerivativesParametric2D(geometry, boundary_conditions, omega, p_dir, p_
             elif value == 'Neumann':
                 G = _shape_gradient_Neumann(c, p_dir, p_adj_conj)
             else :
-                G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, p_adj_conj, tag)
+                G = _shape_gradient_Robin(geometry, c, omega, p_dir,  p_adj_conj, tag)
 
             for j in range(len(geometry.ctrl_pts[tag])):
 
@@ -231,10 +231,10 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
             G.append(_shape_gradient_Neumann2(c, omega, p_dir2, p_adj2_conj))
         else :
 
-            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir1, p_adj1, tag))
-            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir2, p_adj1, tag))
-            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir1, p_adj2, tag))
-            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir2, p_adj2, tag))
+            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir1, p_adj1_conj, tag))
+            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir2, p_adj1_conj, tag))
+            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir1, p_adj2_conj, tag))
+            G.append(_shape_gradient_Robin(geometry, c, omega, p_dir2, p_adj2_conj, tag))
         
         # the eigenvalues are 2-fold degenerate
         for index,form in enumerate(G):
@@ -268,7 +268,7 @@ def ShapeDerivatives3DRijke(geometry, boundary_conditions, omega, p_dir, p_adj, 
         print("NEUMANN WORKED")
     elif boundary_conditions[boundary_index]['Robin'] :
         print("ROBIN WORKED")
-        G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj, p_adj_conj, boundary_index)
+        G = _shape_gradient_Robin(geometry, c, omega, p_dir, p_adj_conj, boundary_index)
             
     Field = _displacement_field(geometry, control_points, boundary_index)
 
