@@ -1,5 +1,5 @@
 import dolfinx
-from dolfinx.fem import Function, FunctionSpace, Constant
+from dolfinx.fem import Function, FunctionSpace, Constant, form
 from dolfinx.mesh import create_unit_square
 from dolfinx.fem.assemble import assemble_matrix,assemble_scalar
 from mpi4py import MPI
@@ -17,11 +17,11 @@ V = FunctionSpace(mesh, ("Lagrange", 1))
 u = TrialFunction(V)
 v = TestFunction(V)
 
-a = inner(grad(u), grad(v))*dx
+a = form(inner(grad(u), grad(v))*dx)
 A = assemble_matrix(a)
 A.assemble()
 
-c = -inner(u , v) * dx
+c = form(-inner(u , v) * dx)
 C = assemble_matrix(c)
 C.assemble()
 

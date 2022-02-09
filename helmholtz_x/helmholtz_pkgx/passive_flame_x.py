@@ -1,5 +1,5 @@
 import dolfinx
-from dolfinx.fem import Function, FunctionSpace, DirichletBC
+from dolfinx.fem import Function, FunctionSpace, dirichletbc, form
 from dolfinx.fem.assemble import assemble_matrix
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
@@ -69,7 +69,7 @@ class PassiveFlame:
                 u_bc.x.scatter_forward()
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
                 dofs = dolfinx.fem.locate_dofs_topological(self.V, self.fdim, facets)
-                bc = DirichletBC(u_bc, dofs)
+                bc = dirichletbc(u_bc, dofs)
                 self.bcs.append(bc)
             if 'Robin' in boundary_conditions[i]:
                 Y = boundary_conditions[i]['Robin']
@@ -102,9 +102,9 @@ class PassiveFlame:
     def assemble_A(self):
 
         # defining ufl forms
-        a = -self.c**2 * inner(grad(self.u), grad(self.v))*self.dx
+        a = form(-self.c**2 * inner(grad(self.u), grad(self.v))*self.dx)
 
-        A = assemble_matrix(a, self.bcs)
+        A = assemble_matrix(a, bcs=self.bcs)
         A.assemble()
 
         self._A = A
@@ -117,7 +117,7 @@ class PassiveFlame:
 
         if self.integrals_R:
 
-            B = assemble_matrix(sum(self.integrals_R))
+            B = assemble_matrix(form(sum(self.integrals_R)))
             B.assemble()
 
         else:
@@ -137,7 +137,7 @@ class PassiveFlame:
 
     def assemble_C(self):
 
-        c = inner(self.u , self.v) * self.dx
+        c = form(inner(self.u , self.v) * self.dx)
         C = assemble_matrix(c, self.bcs)
         C.assemble()
         self._C = C

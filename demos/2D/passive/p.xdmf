@@ -6,8 +6,8 @@
       <Topology TopologyType="Triangle" NumberOfElements="2404" NodesPerElement="3">
         <DataItem Dimensions="2404 3" NumberType="Int" Format="HDF">p.h5:/Mesh/Grid/topology</DataItem>
       </Topology>
-      <Geometry GeometryType="XYZ">
-        <DataItem Dimensions="1408 3" Format="HDF">p.h5:/Mesh/Grid/geometry</DataItem>
+      <Geometry GeometryType="XY">
+        <DataItem Dimensions="1408 2" Format="HDF">p.h5:/Mesh/Grid/geometry</DataItem>
       </Geometry>
     </Grid>
     <Grid Name="Acoustic_Wave" GridType="Collection" CollectionType="Temporal">

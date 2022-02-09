@@ -76,9 +76,9 @@ E = fixed_point_iteration_pep(matrices, D, np.pi, nev=2, i=0, print_results= Fal
 
 omega, uh = normalize_eigenvector(mesh, E, 0, degree=1, which='right')
 
-plt.plot(uh.compute_point_values().real)
+plt.plot(uh.x.array.real)
 plt.savefig("1Dactive_real.png")
 plt.clf()
 
-plt.plot(uh.compute_point_values().imag)
+plt.plot(uh.x.array.imag)
 plt.savefig("1Dactive_imag.png")

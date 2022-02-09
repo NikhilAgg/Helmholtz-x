@@ -1,6 +1,6 @@
 
 
-from dolfinx.fem import Constant, VectorFunctionSpace, Function, DirichletBC, locate_dofs_topological, set_bc
+from dolfinx.fem import Constant, VectorFunctionSpace, Function, dirichletbc, locate_dofs_topological, set_bc, form
 from helmholtz_x.helmholtz_pkgx.petsc4py_utils import conjugate_function
 from dolfinx.fem.assemble import assemble_scalar
 from ufl import  FacetNormal, grad, dot, inner, Measure, div, variable
@@ -73,8 +73,8 @@ def ShapeDerivativesParametric2D(geometry, boundary_conditions, omega, p_dir, p_
 
                 V_x, V_y = geometry.get_displacement_field(tag,j)
                 
-                derivatives[j][0] = MPI.COMM_WORLD.allreduce(assemble_scalar( inner(V_x, n) * G * ds(tag)), op=MPI.SUM)
-                derivatives[j][1] = MPI.COMM_WORLD.allreduce(assemble_scalar( inner(V_y, n) * G * ds(tag)), op=MPI.SUM)
+                derivatives[j][0] = MPI.COMM_WORLD.allreduce(assemble_scalar( form(inner(V_x, n) * G * ds(tag))), op=MPI.SUM)
+                derivatives[j][1] = MPI.COMM_WORLD.allreduce(assemble_scalar( form(inner(V_y, n) * G * ds(tag))), op=MPI.SUM)
             
             results[tag] = derivatives
             
@@ -212,7 +212,7 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
 
     for tag, value in boundary_conditions.items():
         C = Constant(geometry.mesh, PETSc.ScalarType(1))
-        A = assemble_scalar(C * ds(tag))
+        A = assemble_scalar(form(C * ds(tag)))
         A = MPI.COMM_WORLD.allreduce(A, op=MPI.SUM) # For parallel runs
         C = C / A
 
@@ -237,9 +237,9 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
             G.append(_shape_gradient_Robin(geometry, c, omega, p_dir2, p_adj2_conj, tag))
         
         # the eigenvalues are 2-fold degenerate
-        for index,form in enumerate(G):
+        for index,uflform in enumerate(G):
             # value = assemble_scalar(C * form *ds(tag))
-            G[index] = MPI.COMM_WORLD.allreduce(assemble_scalar(C * form *ds(tag)), op=MPI.SUM)
+            G[index] = MPI.COMM_WORLD.allreduce(assemble_scalar( form(C * uflform *ds(tag))), op=MPI.SUM)
         A = np.array(([G[0], G[1]],
                       [G[2], G[3]]))
         
@@ -335,7 +335,7 @@ def _displacement_field(geometry,  points, boundary_index):
         temp.name = 'V'
 
         facets = facet_tags.indices[facet_tags.values == boundary_index]
-        dbc = DirichletBC(temp, locate_dofs_topological(Q, gdim-1, facets))
+        dbc = dirichletbc(temp, locate_dofs_topological(Q, gdim-1, facets))
 
         DisplacementField[control_point_index] = Function(Q)
         DisplacementField[control_point_index].vector.set(0)

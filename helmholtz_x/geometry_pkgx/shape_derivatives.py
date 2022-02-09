@@ -1,6 +1,7 @@
 import dolfinx
 from helmholtz_x.helmholtz_pkgx.petsc4py_utils import conjugate_function
 from dolfinx.fem.assemble import assemble_scalar
+from dolfinx.fem import form
 import numpy as np
 from ufl import  FacetNormal, grad, dot, div, inner, Measure
 from ufl.operators import Dn 
@@ -124,8 +125,8 @@ class ShapeDerivatives:
 
                 G = self.get_Robin()
 
-            gradient_x = MPI.COMM_WORLD.allreduce(assemble_scalar( inner(V_x, n) * G * ds(i) ) , op=MPI.SUM)
-            gradient_y = MPI.COMM_WORLD.allreduce(assemble_scalar( inner(V_y, n) * G * ds(i) ) , op=MPI.SUM)
+            gradient_x = MPI.COMM_WORLD.allreduce(assemble_scalar( form(inner(V_x, n) * G * ds(i)) ) , op=MPI.SUM)
+            gradient_y = MPI.COMM_WORLD.allreduce(assemble_scalar( form(inner(V_y, n) * G * ds(i)) ) , op=MPI.SUM)
 
             shape_derivatives[j][0] = gradient_x
             shape_derivatives[j][1] = gradient_y

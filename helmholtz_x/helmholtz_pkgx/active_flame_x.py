@@ -1,6 +1,6 @@
 import dolfinx
 import basix
-from dolfinx.fem  import Function, FunctionSpace, Constant
+from dolfinx.fem  import Function, FunctionSpace, Constant, form, assemble_vector
 from dolfinx.geometry import compute_collisions, compute_colliding_cells, BoundingBoxTree
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, inner
@@ -87,12 +87,13 @@ class ActiveFlame:
         dx = Measure("dx", subdomain_data=self.subdomains)
 
         phi_k = self.v
-
-        V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(Constant(self.mesh, PETSc.ScalarType(1))*dx(fl)), op=MPI.SUM)
+        volume_form = form(Constant(self.mesh, PETSc.ScalarType(1))*dx(fl))
+        V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(volume_form), op=MPI.SUM)
         b = Function(self.V)
         b.x.array[:] = 0
         const = Constant(self.mesh, (1/V_fl))
-        a = dolfinx.fem.assemble_vector(b.vector, inner(const, phi_k)*dx(fl))
+        gradient_form = form(inner(const, phi_k)*dx(fl))
+        a = assemble_vector(b.vector, gradient_form)#
         b.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
         indices1 = np.array(np.flatnonzero(a.getArray()),dtype=np.int32)
         a = b.x.array
