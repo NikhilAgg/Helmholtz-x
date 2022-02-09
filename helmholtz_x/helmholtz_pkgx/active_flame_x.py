@@ -429,7 +429,7 @@ class ActiveFlameNT:
         phi_k = self.v
         
 
-        V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(Constant(self.mesh, PETSc.ScalarType(1))*dx(fl)), op=MPI.SUM)
+        V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(form(Constant(self.mesh, PETSc.ScalarType(1))*dx(fl))), op=MPI.SUM)
         b = Function(self.V)
         b.x.array[:] = 0
         const = Constant(self.mesh, (1/V_fl))
@@ -440,7 +440,7 @@ class ActiveFlameNT:
         #print(len(tau_func.x.array[:]), len(np.exp(self.omega*1j*tau.x.array)))
         tau_func.x.array[:] = np.exp(self.omega*1j*tau.x.array) 
 
-        a = dolfinx.fem.assemble_vector(b.vector, n * tau_func * inner(const, phi_k) * dx(fl))
+        a = dolfinx.fem.assemble_vector(b.vector, form(n * tau_func * inner(const, phi_k) * dx(fl)))
         b.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
         indices1 = np.array(np.flatnonzero(a.getArray()),dtype=np.int32)
         a = b.x.array
