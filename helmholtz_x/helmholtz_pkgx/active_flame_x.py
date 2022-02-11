@@ -81,7 +81,7 @@ class ActiveFlame:
         Returns
         -------
         v : <class 'tuple'>
-            includes assembled elements of a
+            includes assembled nonzero elements of a and row indices
         """
 
         dx = Measure("dx", subdomain_data=self.subdomains)
@@ -105,12 +105,12 @@ class ActiveFlame:
 
     def _assemble_right_vector(self, point):
         """
-        Calculates degree of freedoms and indices of 
+        Calculates degree of freedoms and column indices of 
         right vector of
         
         \nabla(\phi_j(x_r)) . n
         
-        which includes gradient value of test fuunction at
+        which includes gradient value of test function at
         reference point x_r
         
         Parameters
@@ -199,6 +199,15 @@ class ActiveFlame:
 
     @staticmethod
     def _csr_matrix(a, b):
+        """ This function gets row, column and values of (row.col) pairs of vector a and b
+
+        Args:
+            a ([type]): [description]
+            b ([type]): [description]
+
+        Returns:
+            [type]: rows columns and values
+        """
 
         # len(a) and len(b) are not the same
 
