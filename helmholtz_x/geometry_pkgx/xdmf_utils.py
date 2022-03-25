@@ -88,7 +88,15 @@ class XDMFReader:
         return self.mesh, self.subdomains, self.facet_tags
 
 
-def derivatives_visualizer(filename, shape_derivatives, geometry ):
+def derivatives_visualizer(filename, shape_derivatives, geometry):
+    """ Filename should specify path excluding extension (don't write .xdmf)
+        Geometry should be object that is built by XDMF Reader class
+
+    Args:
+        filename (str): file name (or path )
+        shape_derivatives (dict): Should have shape derivatives as a dictionary
+        geometry (XDMFReader): geometry object
+    """
 
     V = FunctionSpace(geometry.mesh, ("CG",1))
     fdim = geometry.mesh.topology.dim - 1
