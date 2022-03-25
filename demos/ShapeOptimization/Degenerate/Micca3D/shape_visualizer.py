@@ -20,6 +20,25 @@ shape_derivatives={1: [(-106216.64819010241-28842.47439768992j), (-103946.747760
                    10: [(3039.992465215346-18417.460987942064j), (4626.13921984906-22611.29868677982j)],
                    11: [(-1736.0096429541263+9576.824700545447j), (-4317.264466591498+12156.929409672326j)]}
 
+# import json
+# import ast
+# with open('shape_derivatives.txt', 'w') as file:
+#      file.write(json.dumps(str(shape_derivatives))) # use `json.loads` to do the reverse
+
+# with open('shape_derivatives.txt') as f:
+#     data = json.load(f)
+   
+# # read = json.loads('shape_derivatives.json')
+# data = ast.literal_eval(data)
+# print(data,type(data))
+from helmholtz_x.io_utils import dict_writer,dict_loader
+
+filename = "shape_derivatives"
+dict_writer(filename,shape_derivatives)
+data = dict_loader(filename)
+
+assert data == shape_derivatives
+print("IO is correct")
 normalize = True
 if normalize:
     shape_derivatives_real = shape_derivatives.copy()
@@ -56,10 +75,10 @@ fdim = mesh.topology.dim - 1
 bcs = []
 U = Function(V)
 for i in shape_derivatives:
-    print(i,shape_derivatives[i][0])           
+    print(i,shape_derivatives[i])           
     facets = np.array(facet_tags.indices[facet_tags.values == i])
     dofs = locate_dofs_topological(V, fdim, facets)
-    U.x.array[dofs] = shape_derivatives[i][0] #first element of boundary
+    U.x.array[dofs] = shape_derivatives[i] #first element of boundary
 
 print(U.x.array)
 
