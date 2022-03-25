@@ -17,3 +17,12 @@ def dict_loader(filename, extension = ".txt"):
         print(filename, "is loaded.")
     return data
 
+""" 
+
+from helmholtz_x.io_utils import dict_writer,dict_loader
+
+filename = "shape_derivatives"
+dict_writer(filename,shape_derivatives)
+data = dict_loader(filename)
+
+"""
