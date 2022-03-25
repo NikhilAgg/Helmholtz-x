@@ -88,7 +88,7 @@ class XDMFReader:
         return self.mesh, self.subdomains, self.facet_tags
 
 
-def derivatives_visualizer(filename, shape_derivatives, geometry):
+def derivatives_visualizer(filename, shape_derivatives, geometry, normalize=True):
     """ Filename should specify path excluding extension (don't write .xdmf)
         Geometry should be object that is built by XDMF Reader class
 
@@ -98,9 +98,32 @@ def derivatives_visualizer(filename, shape_derivatives, geometry):
         geometry (XDMFReader): geometry object
     """
 
+    if normalize:
+        shape_derivatives_real = shape_derivatives.copy()
+        shape_derivatives_imag = shape_derivatives.copy()
+
+
+        for key, value in shape_derivatives.items():
+            shape_derivatives_real[key] = value[0].real
+            shape_derivatives_imag[key] = value[0].imag 
+            shape_derivatives[key] = value[0]  # get the first eigenvalue of each list
+
+        max_key_real = max(shape_derivatives_real, key=lambda y: abs(shape_derivatives_real[y]))
+        max_value_real = abs(shape_derivatives_real[max_key_real])
+        max_key_imag = max(shape_derivatives_imag, key=lambda y: abs(shape_derivatives_imag[y]))
+        max_value_imag = abs(shape_derivatives_imag[max_key_imag])
+
+        normalized_derivatives = shape_derivatives.copy()
+
+        for key, value in shape_derivatives.items():
+            normalized_derivatives[key] =  value.real/max_value_real + 1j*value.imag/max_value_imag
+
+        shape_derivatives = normalized_derivatives
+
     V = FunctionSpace(geometry.mesh, ("CG",1))
     fdim = geometry.mesh.topology.dim - 1
     U = Function(V)
+
 
     for i in shape_derivatives:
         print(i,shape_derivatives[i][0])           

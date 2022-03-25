@@ -20,7 +20,30 @@ shape_derivatives={1: [(-106216.64819010241-28842.47439768992j), (-103946.747760
                    10: [(3039.992465215346-18417.460987942064j), (4626.13921984906-22611.29868677982j)],
                    11: [(-1736.0096429541263+9576.824700545447j), (-4317.264466591498+12156.929409672326j)]}
 
-print(shape_derivatives[1])
+normalize = True
+if normalize:
+    shape_derivatives_real = shape_derivatives.copy()
+    shape_derivatives_imag = shape_derivatives.copy()
+
+
+    for key, value in shape_derivatives.items():
+        shape_derivatives_real[key] = value[0].real
+        shape_derivatives_imag[key] = value[0].imag 
+        shape_derivatives[key] = value[0]  # get the first eigenvalue of each list
+
+    max_key_real = max(shape_derivatives_real, key=lambda y: abs(shape_derivatives_real[y]))
+    max_value_real = abs(shape_derivatives_real[max_key_real])
+    max_key_imag = max(shape_derivatives_imag, key=lambda y: abs(shape_derivatives_imag[y]))
+    max_value_imag = abs(shape_derivatives_imag[max_key_imag])
+
+    normalized_derivatives = shape_derivatives.copy()
+
+    for key, value in shape_derivatives.items():
+        normalized_derivatives[key] =  value.real/max_value_real + 1j*value.imag/max_value_imag
+
+    shape_derivatives = normalized_derivatives
+print(normalized_derivatives)
+
 
 micca = XDMFReader("MeshDir/Micca")
 
@@ -39,22 +62,6 @@ for i in shape_derivatives:
     U.x.array[dofs] = shape_derivatives[i][0] #first element of boundary
 
 print(U.x.array)
-    
-
-# from helmholtz_x.geometry_pkgx.xdmf_utils import write_xdmf_mesh
-
-# set_bc(U_R.vector, [bc])
-# with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "Results/derivatives_real.xdmf", "w") as xdmf:
-#     xdmf.write_mesh(mesh)
-#     xdmf.write_function(u_real)
-
-
-# bcs = []
-   
-# u_real = Function(V)
-# facets = np.array(facet_tags.indices[facet_tags.values == 1])
-# dofs = locate_dofs_topological(V, fdim, facets)
-# u_real.x.array[dofs] = 2
 
 with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "Results/derivatives.xdmf", "w") as xdmf:
     xdmf.write_mesh(mesh)
