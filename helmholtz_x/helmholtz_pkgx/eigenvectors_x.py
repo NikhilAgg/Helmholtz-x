@@ -7,7 +7,7 @@ from .petsc4py_utils import multiply, vector_matrix_vector
 from mpi4py import MPI
 from petsc4py import PETSc
 
-def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
+def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     """ 
     This function normalizes the eigensolution vr
      which is obtained from complex slepc build
@@ -22,9 +22,12 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
         [<class 'dolfinx.fem.function.Function'>]: normalized eigensolution such that \int (p p dx) = 1
     """
 
-    # omega = 0.
     A = obj.getOperators()[0]
     vr, vi = A.createVecs()
+    
+    if mpc:
+        mpc.backsubstitution(vr)
+        mpc.backsubstitution(vi)
 
     if isinstance(obj, SLEPc.EPS):
         eig = obj.getEigenvalue(i)

@@ -54,12 +54,7 @@ if MPI.COMM_WORLD.rank == 0:
 # Read mesh 
 mesh, subdomains, facet_tags = read_from_msh("MeshDir/Micca.msh", cell_data=True, facet_data=True, gdim=3)
 
-
-        
-
-# FTF = n_tau(params.N3, params.tau)
 FTF = state_space(params.S1, params.s2, params.s3, params.s4)
-
 
 # ________________________________________________________________________________
 # EVERYWHERE İS NEUMANN EXCEPT OUTLET(COMBUSTION CHAMBER OUTLET)
@@ -86,8 +81,6 @@ matrices = PassiveFlame(mesh, facet_tags, boundary_conditions,
                         degree=degree)
 matrices.assemble_A()
 matrices.assemble_C()
-# A = matrices.A
-# C = matrices.C
 
 D = ActiveFlame(mesh, subdomains, params.x_r, params.rho_amb, params.Q_tot, params.U_bulk, FTF, degree=degree)
 

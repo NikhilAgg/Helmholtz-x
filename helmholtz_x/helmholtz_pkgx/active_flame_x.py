@@ -11,8 +11,7 @@ class ActiveFlame:
 
     gamma = 1.4
 
-    def __init__(self, mesh, subdomains, x_r, rho_u, Q, U, FTF, degree=1, comm=None,
-                 constrained_domain=None):
+    def __init__(self, mesh, subdomains, x_r, rho_u, Q, U, FTF, degree=1):
 
         self.comm = comm
 
@@ -94,8 +93,10 @@ class ActiveFlame:
         const = Constant(self.mesh, (1/V_fl))
         gradient_form = form(inner(const, phi_k)*dx(fl))
         a = assemble_vector(b.vector, gradient_form)#
+        # print(a.array)
         b.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
-        indices1 = np.array(np.flatnonzero(a.getArray()),dtype=np.int32)
+        # print(b.x.array)
+        indices1 = np.array(np.flatnonzero(a.array),dtype=np.int32)
         a = b.x.array
         dofmaps = self.V.dofmap
         global_indices = dofmaps.index_map.local_to_global(indices1)

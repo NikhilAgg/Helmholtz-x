@@ -14,7 +14,7 @@ import params
 # approximation space polynomial degree
 degree = 1
 # number of elements in each direction of mesh
-n_elem = 5000
+n_elem = 30
 mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
 V = FunctionSpace(mesh, ("Lagrange", degree))
 
