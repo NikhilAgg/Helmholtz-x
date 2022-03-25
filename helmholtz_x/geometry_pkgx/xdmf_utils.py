@@ -4,7 +4,8 @@ rank = MPI.COMM_WORLD.rank
 
 import meshio
 import dolfinx.io
-
+from dolfinx.fem import Function, FunctionSpace, locate_dofs_topological
+from numpy import array
 def create_mesh(mesh, cell_type, prune_z):
     
     cells = mesh.get_cells_type(cell_type)
@@ -85,3 +86,20 @@ class XDMFReader:
 
     def getAll(self):
         return self.mesh, self.subdomains, self.facet_tags
+
+
+def derivatives_visualizer(filename, shape_derivatives, geometry ):
+
+    V = FunctionSpace(geometry.mesh, ("CG",1))
+    fdim = geometry.mesh.topology.dim - 1
+    U = Function(V)
+
+    for i in shape_derivatives:
+        print(i,shape_derivatives[i][0])           
+        facets = array(geometry.facet_tags.indices[geometry.facet_tags.values == i])
+        dofs = locate_dofs_topological(V, fdim, facets)
+        U.x.array[dofs] = shape_derivatives[i][0] #first element of boundary
+
+    with dolfinx.io.XDMFFile(MPI.COMM_WORLD, filename+".xdmf", "w") as xdmf:
+        xdmf.write_mesh(geometry.mesh)
+        xdmf.write_function(U)
