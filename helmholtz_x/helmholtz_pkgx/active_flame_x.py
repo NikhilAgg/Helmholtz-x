@@ -13,8 +13,6 @@ class ActiveFlame:
 
     def __init__(self, mesh, subdomains, x_r, rho_u, Q, U, FTF, degree=1):
 
-        self.comm = comm
-
         self.mesh = mesh
         self.subdomains = subdomains
         self.x_r = x_r

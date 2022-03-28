@@ -75,12 +75,12 @@ fdim = mesh.topology.dim - 1
 bcs = []
 U = Function(V)
 for i in shape_derivatives:
-    print(i,shape_derivatives[i])           
+    # print(i,shape_derivatives[i])           
     facets = np.array(facet_tags.indices[facet_tags.values == i])
     dofs = locate_dofs_topological(V, fdim, facets)
     U.x.array[dofs] = shape_derivatives[i] #first element of boundary
 
-print(U.x.array)
+# print(U.x.array)
 
 with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "Results/derivatives.xdmf", "w") as xdmf:
     xdmf.write_mesh(mesh)

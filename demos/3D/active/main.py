@@ -23,8 +23,8 @@ mesh, subdomains, facet_tags = load_xdmf_mesh("MeshDir/rijke")
 # Define the boundary conditions
 import params
 boundary_conditions = {1: {'Robin': params.Y_in},  # inlet
-                           2: {'Robin': params.Y_out}, # outlet
-                           3: {'Neumann'}}             # wall
+                       2: {'Robin': params.Y_out}, # outlet
+                       3: {'Neumann'}}             # wall
 
 
 degree = 1
@@ -50,7 +50,7 @@ ftf = n_tau(params.n, params.tau)
 
 D = ActiveFlame(mesh, subdomains,
                     params.x_r, params.rho_in, 1., 1., ftf,
-                    degree=degree, comm = MPI.COMM_WORLD)
+                    degree=degree)
 
 D.assemble_submatrices()
 
