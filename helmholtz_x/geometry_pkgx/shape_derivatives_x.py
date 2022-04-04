@@ -1,3 +1,9 @@
+<<<<<<< HEAD
+=======
+from dolfinx.fem import Constant 
+import numpy as np
+import scipy.linalg
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 
 
 from dolfinx.fem import Constant, VectorFunctionSpace, Function, dirichletbc, locate_dofs_topological, set_bc, form
@@ -7,11 +13,14 @@ from ufl import  FacetNormal, grad, dot, inner, Measure, div, variable
 from ufl.operators import Dn #Dn(f) := dot(grad(f), n).
 from petsc4py import PETSc
 from mpi4py import MPI
+<<<<<<< HEAD
 from geomdl import BSpline, utilities, helpers
 
 import numpy as np
 import scipy.linalg
 import os
+=======
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 
 
 
@@ -212,9 +221,15 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
 
     for tag, value in boundary_conditions.items():
         C = Constant(geometry.mesh, PETSc.ScalarType(1))
+<<<<<<< HEAD
         A = assemble_scalar(form(C * ds(tag)))
         A = MPI.COMM_WORLD.allreduce(A, op=MPI.SUM) # For parallel runs
         C = C / A
+=======
+        A = assemble_scalar(C * ds(tag))
+        A = geometry.mesh.allreduce(A, op=MPI.SUM) # For parallel runs
+        C = 1 / A
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 
         G = []
         if value == 'Dirichlet':

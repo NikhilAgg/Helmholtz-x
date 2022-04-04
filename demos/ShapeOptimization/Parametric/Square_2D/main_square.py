@@ -5,7 +5,11 @@ from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector, normalize_adjoint
 from helmholtz_x.geometry_pkgx.geometry import Geometry
 from math import pi
+<<<<<<< HEAD
 from mpi4py import MPI
+=======
+
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 import os
 import matplotlib.pyplot as plt
 import params

@@ -1,8 +1,13 @@
 import dolfinx
 import basix
+<<<<<<< HEAD
 from dolfinx.fem  import Function, FunctionSpace, Constant, form
 from dolfinx.fem.petsc import assemble_vector
 from dolfinx.geometry import compute_collisions, compute_colliding_cells, BoundingBoxTree
+=======
+from dolfinx.fem  import Function, FunctionSpace, Constant
+from dolfinx import geometry
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, inner
 from petsc4py import PETSc
@@ -85,6 +90,7 @@ class ActiveFlame:
         dx = Measure("dx", subdomain_data=self.subdomains)
 
         phi_k = self.v
+<<<<<<< HEAD
         volume_form = form(Constant(self.mesh, PETSc.ScalarType(1))*dx(fl))
         V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(volume_form), op=MPI.SUM)
         b = Function(self.V)
@@ -93,6 +99,14 @@ class ActiveFlame:
         gradient_form = form(inner(const, phi_k)*dx(fl))
         a = assemble_vector(b.vector, gradient_form)#
         # print(a.array)
+=======
+
+        V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(Constant(self.mesh, PETSc.ScalarType(1))*dx(fl)), op=MPI.SUM)
+        b = Function(self.V)
+        b.x.array[:] = 0
+        const = Constant(self.mesh, (1/V_fl))
+        a = dolfinx.fem.assemble_vector(b.vector, inner(const, phi_k)*dx(fl))
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
         b.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
         # print(b.x.array)
         indices1 = np.array(np.flatnonzero(a.array),dtype=np.int32)
@@ -194,7 +208,7 @@ class ActiveFlame:
             root = MPI.COMM_WORLD.rank
         b_root = MPI.COMM_WORLD.allreduce(root, op=MPI.MAX)
         B = MPI.COMM_WORLD.bcast(B, root=b_root)
-        # print("B ",B)
+        print("B ",B)
         return B
 
     @staticmethod

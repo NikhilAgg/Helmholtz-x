@@ -8,7 +8,10 @@ from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector, normalize_adjoint
 from helmholtz_x.helmholtz_pkgx.gmsh_helpers import read_from_msh
 from helmholtz_x.geometry_pkgx.xdmf_utils import load_xdmf_mesh, write_xdmf_mesh
+<<<<<<< HEAD
 from dolfinx.io import XDMFFile
+=======
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 
 import datetime
 start_time = datetime.datetime.now()
@@ -32,8 +35,13 @@ if MPI.COMM_WORLD.rank == 0:
                 'R_out_cc': .2,
                 'l_cc': .2,
                 'l_ec': 0.041,
+<<<<<<< HEAD
                 'lc_1': 4e-2, # 
                 'lc_2': 4e-2
+=======
+                'lc_1': 1e-2,
+                'lc_2': 1e-2
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
                 }
         # 'lc_1':  'lc_2':  'omega1' :  'omega2'  : cell_no   :    time
         #  1e-2,    1e-2      475j        385j       116517      03:27.967718 
@@ -60,11 +68,19 @@ if MPI.COMM_WORLD.rank == 0:
 
 
 write_xdmf_mesh("MeshDir/Micca",dimension=3)
+<<<<<<< HEAD
 # Read mesh 
 
 mesh, subdomains, facet_tags = load_xdmf_mesh("MeshDir/Micca")
 
 # Read mesh 
+=======
+# Read mesh 
+
+mesh, subdomains, facet_tags = load_xdmf_mesh("MeshDir/Micca")
+
+# Read mesh 
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 # mesh, subdomains, facet_tags = read_from_msh("MeshDir/Micca.msh", cell_data=True, facet_data=True, gdim=3)
 
 # FTF = n_tau(params.N3, params.tau)
@@ -108,6 +124,7 @@ E = fixed_point_iteration_eps(matrices, D, target_dir**2, i=0, tol=1e-3)
 omega_1, p_1 = normalize_eigenvector(mesh, E, i=0, degree=degree)
 omega_2, p_2 = normalize_eigenvector(mesh, E, i=1, degree=degree)
 
+<<<<<<< HEAD
 print("Direct Eigenvalues -> ", omega_1," =? ", omega_2)
 
 # Save eigenvectors
@@ -121,11 +138,18 @@ with XDMFFile(MPI.COMM_WORLD, "Results/p_1.xdmf", "w", encoding=XDMFFile.Encodin
 with XDMFFile(MPI.COMM_WORLD, "Results/p_2.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p_2)
+=======
+print("Direct Eigenvalues -> ", omega_1," =? ", omega_1)
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 # ________________________________________________________________________________
 
 D.assemble_submatrices('adjoint')
 
+<<<<<<< HEAD
 E_adj = fixed_point_iteration_eps(matrices, D, target_adj**2, i=0, tol=1e-3, problem_type='adjoint',print_results=False)
+=======
+E_adj = fixed_point_iteration_eps(matrices, D, target_adj**2, i=0, tol=1e-4, problem_type='adjoint')
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 
 omega_adj_1, p_adj_1 = normalize_eigenvector(mesh, E_adj, i=0, degree=degree)
 omega_adj_2, p_adj_2 = normalize_eigenvector(mesh, E_adj, i=1, degree=degree)
@@ -137,9 +161,25 @@ p_adj_norm_2 = normalize_adjoint(omega_2, p_2, p_adj_2, matrices, D)
 
 # Save eigenvectors
 
+<<<<<<< HEAD
 p_adj_1.name = "P_1_Adjoint"
 p_adj_2.name = "P_2_Adjoint"
 
+=======
+from dolfinx.io import XDMFFile
+
+p_1.name = "P_1_Direct"
+p_2.name = "P_2_Direct"
+p_adj_1.name = "P_1_Adjoint"
+p_adj_2.name = "P_2_Adjoint"
+
+with XDMFFile(MPI.COMM_WORLD, "Results/p_1.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
+    xdmf.write_mesh(mesh)
+    xdmf.write_function(p_1)
+with XDMFFile(MPI.COMM_WORLD, "Results/p_2.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
+    xdmf.write_mesh(mesh)
+    xdmf.write_function(p_2)
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
 with XDMFFile(MPI.COMM_WORLD, "Results/p_adj_1.xdmf", "w", encoding=XDMFFile.Encoding.HDF5) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p_adj_1)

@@ -1,6 +1,7 @@
 from dolfinx.fem.assemble import assemble_scalar
 import numpy as np
 from slepc4py import SLEPc
+<<<<<<< HEAD
 from dolfinx.fem import ( Function, FunctionSpace, form)
 from ufl import dx
 from .petsc4py_utils import multiply, vector_matrix_vector
@@ -8,6 +9,14 @@ from mpi4py import MPI
 from petsc4py import PETSc
 
 def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
+=======
+from dolfinx.fem import ( Function, FunctionSpace)
+from ufl import dx
+from .petsc4py_utils import multiply, vector_matrix_vector
+from mpi4py import MPI
+
+def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
     """ 
     This function normalizes the eigensolution vr
      which is obtained from complex slepc build
@@ -63,8 +72,15 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     p.vector.setArray(vr.array)
     p.x.scatter_forward()
 
+<<<<<<< HEAD
     meas = np.sqrt(mesh.comm.allreduce(assemble_scalar(form(p*p*dx)), op=MPI.SUM))
     # print("MEAS:", meas)
+=======
+    # meas = assemble_scalar(p*p*dx)
+    # meas = np.sqrt(meas)
+    meas = np.sqrt(mesh.comm.allreduce(assemble_scalar(p*p*dx), op=MPI.SUM))
+    print("MEAS:", meas)
+>>>>>>> 584a85f443b9456290c3724940196875268be88b
     
     temp = vr.array
     temp= temp/meas
