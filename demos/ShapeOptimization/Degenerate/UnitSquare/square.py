@@ -1,5 +1,7 @@
 import gmsh
-
+import os
+dir_path = os.path.dirname(os.path.realpath(__file__))
+print(dir_path)
 
 def geom_rectangle(file="MeshDir/square", fltk=True):
 
@@ -50,7 +52,7 @@ def geom_rectangle(file="MeshDir/square", fltk=True):
         fltk_options()
         gmsh.fltk.run()
 
-    # gmsh.finalize()
+    gmsh.finalize()
 
 
 def fltk_options():
@@ -80,3 +82,6 @@ def fltk_options():
 if __name__ == '__main__':
 
     geom_rectangle(fltk=True)
+    from helmholtz_x.geometry_pkgx.xdmf_utils import  write_xdmf_mesh
+
+    write_xdmf_mesh(dir_path +"/MeshDir/square",dimension=2)

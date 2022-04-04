@@ -1,14 +1,12 @@
 import numpy as np
 import dolfinx
-from dolfinx import  UnitIntervalMesh
-from dolfinx.io import XDMFFile, VTKFile
+from dolfinx.mesh import meshtags,create_unit_interval
 from mpi4py import MPI
 import matplotlib.pyplot as plt
-
-
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import pep_solver
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
+from petsc4py import PETSc
 import params
 from petsc4py import PETSc
 
@@ -20,7 +18,7 @@ deg = 1
 # number of elements in each direction of mesh
 n_elem = 100
 
-mesh = UnitIntervalMesh(MPI.COMM_WORLD, n_elem)
+mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
 
 boundaries = [(1, lambda x: np.isclose(x[0], 0)),
               (2, lambda x: np.isclose(x[0], 1))]
@@ -34,7 +32,7 @@ for (marker, locator) in boundaries:
 facet_indices = np.array(np.hstack(facet_indices), dtype=np.int32)
 facet_markers = np.array(np.hstack(facet_markers), dtype=np.int32)
 sorted_facets = np.argsort(facet_indices)
-facet_tag = dolfinx.MeshTags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
+facet_tag = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
 
 # Define the boundary conditions
 

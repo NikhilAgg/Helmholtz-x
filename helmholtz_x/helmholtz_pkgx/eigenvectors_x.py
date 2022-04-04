@@ -1,12 +1,13 @@
 from dolfinx.fem.assemble import assemble_scalar
 import numpy as np
 from slepc4py import SLEPc
-from dolfinx import ( Function, FunctionSpace)
+from dolfinx.fem import ( Function, FunctionSpace, form)
 from ufl import dx
 from .petsc4py_utils import multiply, vector_matrix_vector
+from mpi4py import MPI
+from petsc4py import PETSc
 
-
-def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
+def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     """ 
     This function normalizes the eigensolution vr
      which is obtained from complex slepc build
@@ -21,9 +22,12 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
         [<class 'dolfinx.fem.function.Function'>]: normalized eigensolution such that \int (p p dx) = 1
     """
 
-    # omega = 0.
     A = obj.getOperators()[0]
     vr, vi = A.createVecs()
+    
+    if mpc:
+        mpc.backsubstitution(vr)
+        mpc.backsubstitution(vi)
 
     if isinstance(obj, SLEPc.EPS):
         eig = obj.getEigenvalue(i)
@@ -40,18 +44,37 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right'):
     V = FunctionSpace(mesh, ("CG", degree))
     p = Function(V)
 
-    p.vector.setArray(vr.array)
+    # def FixSign(x):
+    #     # Force the eigenfunction to be real and positive, since
+    #     # some eigensolvers may return the eigenvector multiplied
+    #     # by a complex number of modulus one.
+    #     comm = x.getComm()
+    #     rank = comm.getRank()
+    #     n = 1 if rank == 0 else 0
+    #     aux = PETSc.Vec().createMPI((n, PETSc.DECIDE), comm=comm)
+    #     if rank == 0: aux[0] = x[0]
+    #     aux.assemble()
+    #     x0 = aux.sum()
+    #     sign = x0/abs(x0)
+    #     x.scale(1.0/sign)
 
-    meas = assemble_scalar(p*p*dx)
-    meas = np.sqrt(meas)
+    # FixSign(vr)
+
+    p.vector.setArray(vr.array)
+    p.x.scatter_forward()
+
+    meas = np.sqrt(mesh.comm.allreduce(assemble_scalar(form(p*p*dx)), op=MPI.SUM))
+    # print("MEAS:", meas)
     
     temp = vr.array
     temp= temp/meas
 
     p_normalized = Function(V) # Required for Parallel runs
     p_normalized.vector.setArray(temp)
+    p_normalized.x.scatter_forward()
 
     return omega, p_normalized
+    # return omega, p
 
 def normalize_adjoint(omega_dir, p_dir, p_adj, matrices, D=None):
     """

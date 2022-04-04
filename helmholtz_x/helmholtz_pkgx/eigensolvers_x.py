@@ -1,6 +1,8 @@
 from slepc4py import SLEPc
 from mpi4py import MPI
 import numpy as np
+from .eigenvectors_x import normalize_eigenvector
+from .petsc4py_utils import vector_matrix_vector
 def results(E):
 
     print()
@@ -225,6 +227,155 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
 
         if k != 0:
             alpha[k] = 1/(1 - ((f[k] - f[k-1])/(omega[k] - omega[k-1])))
+
+        omega[k+1] = alpha[k] * f[k] + (1 - alpha[k]) * omega[k]
+
+        domega = omega[k+1] - omega[k]
+        if MPI.COMM_WORLD.rank == 0:
+            print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
+                k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
+            ))
+
+    return E
+
+
+def newton_solver(operators, D,
+           init, nev=2, i=0,
+           tol=1e-3, maxiter=100,
+           print_results=False):
+    """
+    The convergence strongly depends/relies on the initial value assigned to omega.
+    Targeting zero in the shift-and-invert (spectral) transformation or, more in general,
+    seeking for the eigenvalues nearest to zero might also be problematic.
+    The implementation uses the TwoSided option to compute the adjoint eigenvector
+    (IT HAS BEEN TESTED).
+    :param operators:
+    :param D:
+    :param init: initial value assigned to omega
+    :param nev:
+    :param i:
+    :param tol:
+    :param maxiter:
+    :param print_results:
+    :return:
+    """
+
+    A = operators.A
+    C = operators.C
+    B = operators.B
+
+    vr, vi = A.createVecs()
+
+    # mesh and degree as instance variables of ActiveFlame
+    mesh = D.mesh
+    degree = D.degree
+
+    omega = np.zeros(maxiter, dtype=complex)
+    omega[0] = init
+
+    domega = 2 * tol
+    k = 0
+
+    # formatting
+    tol_ = "{:.0e}".format(tol)
+    tol_ = int(tol_[-2:])
+    s = "{{:+.{}f}}".format(tol_)
+
+    while abs(domega) > tol:
+
+        D.assemble_matrix(omega[k])
+        if not B:
+            L = A + omega[k] ** 2 * C - D.matrix
+        
+            dL_domega = 2 * omega[k] * C - D.get_derivative(omega[k])
+        else:
+            L = A + omega[k] * B + omega[k]** 2 * C  - D.matrix
+                
+            dL_domega = B + (2 * omega[k] * C) - D.get_derivative(omega[k])
+
+        # solve the eigenvalue problem L(\omega) * p = \lambda * C * p
+        # set the target to zero (shift-and-invert)
+        E = eps_solver(L, - C, 0, nev, two_sided=True, print_results=print_results)
+
+        eig = E.getEigenvalue(i)
+
+        omega_dir, p = normalize_eigenvector(mesh, E, i, degree=1, which='right')
+
+        omega_adj, p_adj = normalize_eigenvector(mesh, E, i, degree=1, which='left')
+
+        # convert into PETSc.Vec type
+        p_vec = p.vector
+        p_adj_vec = p_adj.vector
+
+        # numerator and denominator
+        num = vector_matrix_vector(p_adj_vec, dL_domega, p_vec)
+        den = vector_matrix_vector(p_adj_vec, C, p_vec)
+
+        deig = num / den
+        domega = - eig / deig
+
+        omega[k + 1] = omega[k] + domega
+
+        print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
+            k, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)))
+
+        k += 1
+
+    return E
+
+
+def fixed_point_iteration_ntau(operators, target, mesh, subdomains,
+                    x_r, rho_in, Q, U,
+                    n, tau, degree=1, nev=2, i=0,
+                              tol=1e-8, maxiter=50,
+                              print_results=False,
+                              problem_type='direct'):
+
+    A = operators.A
+    C = operators.C
+    B = operators.B
+    if problem_type == 'adjoint':
+        B = operators.B_adj
+
+    omega = np.zeros(maxiter, dtype=complex)
+    f = np.zeros(maxiter, dtype=complex)
+    alpha = np.zeros(maxiter, dtype=complex)
+    E = pep_solver(A, B, C, target, nev, print_results=print_results)
+    vr, vi = A.getVecs()
+    eig = E.getEigenpair(i, vr, vi)
+    omega[0] = eig
+    alpha[0] = .5
+
+    domega = 2 * tol
+    k = - 1
+
+    # formatting
+    s = "{:.0e}".format(tol)
+    s = int(s[-2:])
+    s = "{{:+.{}f}}".format(s)
+
+    from helmholtz_x.helmholtz_pkgx.active_flame_x import ActiveFlameNT
+
+    while abs(domega) > tol:
+
+        k += 1
+        
+        D = ActiveFlameNT(mesh, subdomains,
+                    x_r, rho_in, Q, U,
+                    n, tau, omega[k], 
+                    degree=degree)
+        D.assemble_submatrices()
+        D_Mat = D.matrix
+        if problem_type == 'adjoint':
+            D_Mat = D.adjoint_matrix
+
+        nlinA = A - D_Mat
+        E = pep_solver(nlinA, B, C, target, nev, print_results=print_results)
+        eig = E.getEigenpair(i, vr, vi)
+        f[k] = eig
+
+        if k != 0:
+            alpha[k] = 1 / (1 - ((f[k] - f[k-1]) / (omega[k] - omega[k-1])))
 
         omega[k+1] = alpha[k] * f[k] + (1 - alpha[k]) * omega[k]
 

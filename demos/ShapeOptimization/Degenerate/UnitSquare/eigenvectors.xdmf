@@ -2,12 +2,12 @@
 <!DOCTYPE Xdmf SYSTEM "Xdmf.dtd" []>
 <Xdmf Version="3.0" xmlns:xi="http://www.w3.org/2001/XInclude">
   <Domain>
-    <Grid Name="mesh" GridType="Uniform">
+    <Grid Name="Grid" GridType="Uniform">
       <Topology TopologyType="Triangle" NumberOfElements="944" NodesPerElement="3">
-        <DataItem Dimensions="944 3" NumberType="Int" Format="HDF">eigenvectors.h5:/Mesh/mesh/topology</DataItem>
+        <DataItem Dimensions="944 3" NumberType="Int" Format="HDF">eigenvectors.h5:/Mesh/Grid/topology</DataItem>
       </Topology>
       <Geometry GeometryType="XY">
-        <DataItem Dimensions="513 2" Format="HDF">eigenvectors.h5:/Mesh/mesh/geometry</DataItem>
+        <DataItem Dimensions="513 2" Format="HDF">eigenvectors.h5:/Mesh/Grid/geometry</DataItem>
       </Geometry>
     </Grid>
     <Grid Name="Direct1" GridType="Collection" CollectionType="Temporal">

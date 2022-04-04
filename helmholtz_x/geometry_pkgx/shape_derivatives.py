@@ -1,10 +1,11 @@
 import dolfinx
 from helmholtz_x.helmholtz_pkgx.petsc4py_utils import conjugate_function
 from dolfinx.fem.assemble import assemble_scalar
+from dolfinx.fem import form
 import numpy as np
 from ufl import  FacetNormal, grad, dot, div, inner, Measure
 from ufl.operators import Dn 
-
+from mpi4py import MPI
 
 class ShapeDerivatives:
 
@@ -107,35 +108,27 @@ class ShapeDerivatives:
 
             if "Dirichlet" in self.boundary_conditions[i]:
 
-                G_dir = self.get_Dirichlet()
+                G = self.get_Dirichlet()
                 # print(assemble_scalar(G_dir*ds(i)))
 
-                gradient_x = assemble_scalar( inner(V_x, n) * G_dir * ds(i) )
-                gradient_y = assemble_scalar( inner(V_y, n) * G_dir * ds(i) )
+                # gradient_x = assemble_scalar( inner(V_x, n) * G_dir * ds(i) )
+                # gradient_y = assemble_scalar( inner(V_y, n) * G_dir * ds(i) )
 
             elif "Neumann" in self.boundary_conditions[i]:
 
-                G_neu = self.get_Neumann()
+                G = self.get_Neumann()
 
-                gradient_x = assemble_scalar( inner(V_x, n) * G_neu * ds(i) )
-                gradient_y = assemble_scalar( inner(V_y, n) * G_neu * ds(i) )
+                # gradient_x = assemble_scalar( inner(V_x, n) * G_neu * ds(i) )
+                # gradient_y = assemble_scalar( inner(V_y, n) * G_neu * ds(i) )
 
             elif "Robin" in self.boundary_conditions[i]:
 
-                G_rob = self.get_Robin()
+                G = self.get_Robin()
 
-                gradient_x = assemble_scalar( inner(V_x, n) * G_rob * ds(i) )
-                gradient_y = assemble_scalar( inner(V_y, n) * G_rob * ds(i) )
+            gradient_x = MPI.COMM_WORLD.allreduce(assemble_scalar( form(inner(V_x, n) * G * ds(i)) ) , op=MPI.SUM)
+            gradient_y = MPI.COMM_WORLD.allreduce(assemble_scalar( form(inner(V_y, n) * G * ds(i)) ) , op=MPI.SUM)
 
             shape_derivatives[j][0] = gradient_x
             shape_derivatives[j][1] = gradient_y
 
         return shape_derivatives
-
-#
-#
-
-# example
-# instance_1 = shape_derivatives_complex.Class1(geometry, boundary_conditions, p_dir, p_adj, v=v)
-# shape_der_3 = instance_1(3)
-# shape_der_4 = instance_1(4)

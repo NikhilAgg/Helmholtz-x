@@ -1,7 +1,5 @@
-import os
 
-import dolfinx
-import numpy as np
+
 from mpi4py import MPI
 from petsc4py import PETSc
 from helmholtz_x.helmholtz_pkgx.active_flame_x import ActiveFlame
@@ -33,8 +31,8 @@ if MPI.COMM_WORLD.rank == 0:
             'R_out_cc': .2,
             'l_cc': .2,
             'l_ec': 0.041,
-            'lc_1': 5e-2,
-            'lc_2': 1e-2
+            'lc_1': 2e-2,
+            'lc_2': 2e-2
             }
 
 
@@ -56,26 +54,21 @@ if MPI.COMM_WORLD.rank == 0:
 # Read mesh 
 mesh, subdomains, facet_tags = read_from_msh("MeshDir/Micca.msh", cell_data=True, facet_data=True, gdim=3)
 
-
-        
-
-# FTF = n_tau(params.N3, params.tau)
 FTF = state_space(params.S1, params.s2, params.s3, params.s4)
-
 
 # ________________________________________________________________________________
 # EVERYWHERE İS NEUMANN EXCEPT OUTLET(COMBUSTION CHAMBER OUTLET)
-boundary_conditions = {1: {'Neumann'},
-                       2: {'Neumann'},
-                       3: {'Neumann'},
-                       4: {'Neumann'},
-                       5: {'Neumann'},
-                       6: {'Neumann'},
-                       7: {'Neumann'},
-                       8: {'Neumann'},
-                       9: {'Neumann'},
-                       10: {'Neumann'},
-                       11: {'Dirichlet'}}
+boundary_conditions = {1: 'Neumann',
+                       2: 'Neumann',
+                       3: 'Neumann',
+                       4: 'Neumann',
+                       5: 'Neumann',
+                       6: 'Neumann',
+                       7: 'Neumann',
+                       8: 'Neumann',
+                       9: 'Neumann',
+                       10: 'Neumann',
+                       11: 'Dirichlet'}
 
 degree = 2
 
@@ -88,8 +81,6 @@ matrices = PassiveFlame(mesh, facet_tags, boundary_conditions,
                         degree=degree)
 matrices.assemble_A()
 matrices.assemble_C()
-# A = matrices.A
-# C = matrices.C
 
 D = ActiveFlame(mesh, subdomains, params.x_r, params.rho_amb, params.Q_tot, params.U_bulk, FTF, degree=degree)
 
@@ -103,7 +94,7 @@ omega_2, p_dir2 = normalize_eigenvector(mesh, E, i=1, degree=degree)
 
 D.assemble_submatrices('adjoint')
 
-E_adj = fixed_point_iteration_eps(matrices, D, target_adj**2, i=1, tol=1e-4, problem_type='adjoint')
+E_adj = fixed_point_iteration_eps(matrices, D, target_adj**2, i=0, tol=1e-4, problem_type='adjoint')
 
 omega_adj_1, p_adj1 = normalize_eigenvector(mesh, E_adj, i=0, degree=degree)
 omega_adj_2, p_adj2 = normalize_eigenvector(mesh, E_adj, i=1, degree=degree)

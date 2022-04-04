@@ -1,6 +1,6 @@
 import dolfinx
-from dolfinx import Function, FunctionSpace, UnitIntervalMesh, fem
-from dolfinx.fem.assemble import assemble_matrix
+from dolfinx.fem import Function, FunctionSpace, dirichletbc, form
+from dolfinx.fem.petsc import assemble_matrix
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
 from petsc4py import PETSc
@@ -64,12 +64,12 @@ class PassiveFlame:
         self.integrals_R = []
         for i in boundary_conditions:
             if 'Dirichlet' in boundary_conditions[i]:
-                u_bc = dolfinx.Function(self.V)
+                u_bc = Function(self.V)
                 u_bc.interpolate(lambda x:x[0]*0)
                 u_bc.x.scatter_forward()
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
                 dofs = dolfinx.fem.locate_dofs_topological(self.V, self.fdim, facets)
-                bc = dolfinx.DirichletBC(u_bc, dofs)
+                bc = dirichletbc(u_bc, dofs)
                 self.bcs.append(bc)
             if 'Robin' in boundary_conditions[i]:
                 Y = boundary_conditions[i]['Robin']
@@ -102,9 +102,9 @@ class PassiveFlame:
     def assemble_A(self):
 
         # defining ufl forms
-        a = -self.c**2 * inner(grad(self.u), grad(self.v))*self.dx
+        a = form(-self.c**2 * inner(grad(self.u), grad(self.v))*self.dx)
 
-        A = assemble_matrix(a, self.bcs)
+        A = assemble_matrix(a, bcs=self.bcs)
         A.assemble()
 
         self._A = A
@@ -117,7 +117,7 @@ class PassiveFlame:
 
         if self.integrals_R:
 
-            B = assemble_matrix(sum(self.integrals_R))
+            B = assemble_matrix(form(sum(self.integrals_R)))
             B.assemble()
 
         else:
@@ -131,15 +131,13 @@ class PassiveFlame:
         B_adj = B.copy()
         B_adj.transpose()
         B_adj.conjugate()
-        # B_adj = B.copy()
-        # B.transpose(B_adj)
 
         self._B = B
         self._B_adj = B_adj    
 
     def assemble_C(self):
 
-        c = inner(self.u , self.v) * self.dx
+        c = form(inner(self.u , self.v) * self.dx)
         C = assemble_matrix(c, self.bcs)
         C.assemble()
         self._C = C

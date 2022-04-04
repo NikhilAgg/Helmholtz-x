@@ -2,9 +2,10 @@ from helmholtz_x.geometry_pkgx import bsplines
 from helmholtz_x.geometry_pkgx.gmsh_utils import make_geometry
 from helmholtz_x.helmholtz_pkgx.gmsh_helpers import read_from_msh
 import ufl
-import dolfinx
+from dolfinx.fem import FunctionSpace, Function, VectorFunctionSpace, locate_dofs_topological
 from mpi4py import MPI
 import numpy as np
+from petsc4py import PETSc
 
 class Geometry:
 
@@ -118,7 +119,7 @@ class Geometry:
         """
         
         
-        Q = dolfinx.VectorFunctionSpace(self.mesh, ("CG", 1))
+        Q = VectorFunctionSpace(self.mesh, ("CG", 1))
         cell_map = self.mesh.topology.index_map(self.mesh.topology.dim)
         num_cells = cell_map.size_local + cell_map.num_ghosts
 
@@ -139,7 +140,7 @@ class Geometry:
 
         facets = self.facet_tags.indices[self.facet_tags.values == tag]
         fdim = self.mesh.topology.dim-1 # facet dimension
-        indices = dolfinx.fem.locate_dofs_topological(Q, fdim, facets)
+        indices = locate_dofs_topological(Q, fdim, facets)
         x0 = self.mesh.geometry.x
 
         edge_coordinates = x0[indices]
@@ -162,11 +163,14 @@ class Geometry:
         d = b.reshape(-1)
         e = c.reshape(-1)
 
-        V_x = dolfinx.Function(Q)
+        V_x = Function(Q)
         V_x.vector[dofs_Q] = d
+        V_x.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
 
-        V_y = dolfinx.Function(Q)
+        V_y = Function(Q)
         V_y.vector[dofs_Q] = e
+        V_y.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
+        
 
         return V_x, V_y
 
@@ -186,11 +190,11 @@ class Geometry:
         # vertex_to_dof_V = vertex_to_dof_map(V)
         # dofs_V = vertex_to_dof_V[self.indices]
 
-        Q = dolfinx.FunctionSpace(self.mesh, ("CG", 1))
+        Q = FunctionSpace(self.mesh, ("CG", 1))
 
         facets = np.array(self.facet_tags.indices[self.facet_tags.values == i])
         fdim = self.mesh.topology.dim-1 # facet dimension
-        dofs = dolfinx.fem.locate_dofs_topological(Q, fdim, facets)
+        dofs = locate_dofs_topological(Q, fdim, facets)
 
         x0 = Q.tabulate_dof_coordinates()
         edge_coordinates = x0[dofs]
@@ -204,7 +208,7 @@ class Geometry:
             array[k] = self.bspline[i].get_curvature_from_point(boundary_point)
 
         
-        curvature = dolfinx.Function(Q)
+        curvature = Function(Q)
         curvature.vector[dofs] = array
         # curvature = Function(V)
         # curvature.vector()[dofs_V] = a
@@ -237,6 +241,11 @@ if __name__ == '__main__':
     geometry.make_mesh(False)
     print(geometry.ctrl_pts)
     import matplotlib.pyplot as plt
-    plt.plot(geometry.get_displacement_field(2,1).vector.getArray())
-    plt.savefig("plot.pdf")
+    Vx, Vy = geometry.get_displacement_field(4,5)
+    from dolfinx.io import XDMFFile
+    with XDMFFile(MPI.COMM_WORLD, "Vy.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
+        xdmf.write_mesh(geometry.mesh)
+        xdmf.write_function(Vy)
+
+    
 

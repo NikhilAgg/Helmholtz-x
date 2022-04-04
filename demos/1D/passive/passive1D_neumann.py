@@ -1,11 +1,9 @@
 import numpy as np
 import dolfinx
-from dolfinx import  UnitIntervalMesh
-from dolfinx.io import XDMFFile, VTKFile
+from dolfinx.mesh import meshtags,create_unit_interval
 from mpi4py import MPI
-# import matplotlib.pyplot as plt
-
-
+from dolfinx.fem import Constant
+import matplotlib.pyplot as plt
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import eps_solver
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
@@ -18,7 +16,7 @@ deg = 1
 # number of elements in each direction of mesh
 n_elem = 5
 
-mesh = UnitIntervalMesh(MPI.COMM_WORLD, n_elem)
+mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
 
 # DEFINITION OF BOUNDARIES
 
@@ -34,7 +32,7 @@ for (marker, locator) in boundaries:
 facet_indices = np.array(np.hstack(facet_indices), dtype=np.int32)
 facet_markers = np.array(np.hstack(facet_markers), dtype=np.int32)
 sorted_facets = np.argsort(facet_indices)
-facet_tag = dolfinx.MeshTags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
+facet_tag = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
 
 # Define the boundary conditions
 
@@ -43,7 +41,7 @@ boundary_conditions = {1: {'Neumann'},  # inlet
 
 # Define Speed of sound
 
-c = dolfinx.Constant(mesh, PETSc.ScalarType(1))
+c = Constant(mesh, PETSc.ScalarType(1))
 
 matrices = PassiveFlame(mesh, facet_tag, boundary_conditions, c)
 

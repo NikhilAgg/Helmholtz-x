@@ -5,15 +5,17 @@ from mpi4py import MPI
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import pep_solver
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
-from helmholtz_x.helmholtz_pkgx.gmsh_helpers import read_from_msh
+from helmholtz_x.geometry_pkgx.xdmf_utils import load_xdmf_mesh, write_xdmf_mesh
 
 # Generate mesh
 from rijke_geom import geom_rectangle
 if MPI.COMM_WORLD.rank == 0:
     geom_rectangle(fltk=False)
 
+write_xdmf_mesh("MeshDir/rijke",dimension=2)
 # Read mesh 
-mesh, cell_tags, facet_tags = read_from_msh("MeshDir/rijke.msh", cell_data=True, facet_data=True, gdim=2)
+
+mesh, cell_tags, facet_tags = load_xdmf_mesh("MeshDir/rijke")
 
 # Define the boundary conditions
 import params

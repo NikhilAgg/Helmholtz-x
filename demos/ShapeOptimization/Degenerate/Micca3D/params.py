@@ -108,7 +108,7 @@ x_r = np.array([cyl2cart(r_r, i*theta, z_r) for i in range(16)])
 #                     ''',
 #                     degree=1, l_cc=l_cc, gamma=gamma, r=r)
 
-from dolfinx import Function,FunctionSpace
+from dolfinx.fem import Function,FunctionSpace
 
 def c(mesh):
     V = FunctionSpace(mesh, ("DG", 0))
