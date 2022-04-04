@@ -1,3 +1,4 @@
+from tkinter import N
 import dolfinx
 from dolfinx.fem import Function, FunctionSpace, dirichletbc, form
 from mpi4py import MPI
@@ -10,7 +11,7 @@ from dolfinx.mesh import MeshTags
 class PassiveFlame:
 
     def __init__(self, mesh, facet_tags, boundary_conditions,
-                 c, periodic_relation, BlochNumber, degree=1):
+                 c, periodic_relation, N, degree=1):
         """
         
 
@@ -52,7 +53,7 @@ class PassiveFlame:
 
         self.dx = Measure('dx', domain=mesh)
         self.ds = Measure('ds', domain=mesh, subdomain_data=facet_tags)
-
+        self.N = N
 
         self.V = FunctionSpace(mesh, ("Lagrange", degree))
 
@@ -77,6 +78,7 @@ class PassiveFlame:
                 integral_R = 1j * Y * self.c * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_R) 
             if 'Bloch' in boundary_conditions[i]:
+                print("Bloch BC worked.")
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
                 fdim = self.mesh.topology.dim - 1
                 self.bloch_tag = i
@@ -84,9 +86,12 @@ class PassiveFlame:
 
         self.mpc = MultiPointConstraint(self.V)
         # We define a scaler to impose periodicity
-        scaler = PETSc.ScalarType(np.exp(1j*2*np.pi/BlochNumber))
+        scaler = PETSc.ScalarType(np.exp(1j*2*np.pi/self.N))
         self.mpc.create_periodic_constraint_topological(self.mt, self.bloch_tag, periodic_relation, self.bcs, scale = scaler)
         self.mpc.finalize()
+        print("SLAVES: ", len(self.mpc.slaves))
+        print("MASTERS: ", len(self.mpc.masters))
+
 
         self._A = None
         self._B = None

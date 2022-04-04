@@ -86,6 +86,12 @@ class XDMFReader:
 
     def getAll(self):
         return self.mesh, self.subdomains, self.facet_tags
+    
+    def getNumberofCells(self):
+        t_imap = self.mesh.topology.index_map(self.mesh.topology.dim)
+        num_cells = t_imap.size_local + t_imap.num_ghosts
+        return num_cells
+        # print("Number of cells: ", num_cells)
 
 
 def derivatives_visualizer(filename, shape_derivatives, geometry, normalize=True):

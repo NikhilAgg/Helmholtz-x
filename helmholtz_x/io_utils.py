@@ -38,7 +38,7 @@ import h5py
 import dolfinx
 import dolfinx.io
 
-from dolfinx.geometry import BoundingBoxTree, compute_collisions_point, select_colliding_cells
+from dolfinx.geometry import BoundingBoxTree, compute_collisions, compute_colliding_cells
 
 from ufl import dx
 
@@ -56,8 +56,8 @@ def interpolate_non_matching_meshes(f1, f2, padding=1E-12):
 
     dof_coordinates = V2.tabulate_dof_coordinates()
     for i, coord in enumerate(dof_coordinates):
-        cell_candidates = compute_collisions_point(tree, coord)
-        cell = select_colliding_cells(mesh1, cell_candidates, coord, 1)
+        cell_candidates = compute_collisions(tree, coord)
+        cell = compute_colliding_cells(mesh1, cell_candidates, coord)
         assert(cell.shape[0] == 1)
         f1_eval = f1.eval(coord, cell)
         f2.vector[i] = f1_eval
@@ -66,9 +66,9 @@ def interpolate_non_matching_meshes(f1, f2, padding=1E-12):
 
 
 def write_function_as_vector(function, filename):
-    comm = function.function_space.mesh.mpi_comm()
+    comm = MPI.COMM_WORLD
     vector = function.vector
-
+    
     with h5py.File(filename, "w", driver="mpio", comm=comm) as f:
         global_size = vector.getSize()
         d = f.create_dataset("vector", (global_size,), dtype=np.float64)

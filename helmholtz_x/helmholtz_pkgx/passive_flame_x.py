@@ -1,6 +1,6 @@
 import dolfinx
 from dolfinx.fem import Function, FunctionSpace, dirichletbc, form
-from dolfinx.fem.assemble import assemble_matrix
+from dolfinx.fem.petsc import assemble_matrix
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
 from petsc4py import PETSc

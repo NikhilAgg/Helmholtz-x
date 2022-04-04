@@ -1,6 +1,7 @@
 import dolfinx
 import basix
-from dolfinx.fem  import Function, FunctionSpace, Constant, form, assemble_vector
+from dolfinx.fem  import Function, FunctionSpace, Constant, form
+from dolfinx.fem.petsc import assemble_vector
 from dolfinx.geometry import compute_collisions, compute_colliding_cells, BoundingBoxTree
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, inner

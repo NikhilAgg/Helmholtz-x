@@ -1,5 +1,5 @@
 from dolfinx.fem import FunctionSpace,Constant
-from dolfinx.mesh import MeshTags, locate_entities,create_unit_interval
+from dolfinx.mesh import meshtags, locate_entities,create_unit_interval
 import numpy as np
 from mpi4py import MPI
 import matplotlib.pyplot as plt
@@ -14,7 +14,7 @@ import params
 # approximation space polynomial degree
 degree = 1
 # number of elements in each direction of mesh
-n_elem = 30
+n_elem = 3000
 mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
 V = FunctionSpace(mesh, ("Lagrange", degree))
 
@@ -26,7 +26,7 @@ def fl_subdomain_func(x, eps=1e-16):
 tdim = mesh.topology.dim
 marked_cells = locate_entities(mesh, tdim, fl_subdomain_func)
 fl = 0
-subdomains = MeshTags(mesh, tdim, marked_cells, np.full(len(marked_cells), fl, dtype=np.int32))
+subdomains = meshtags(mesh, tdim, marked_cells, np.full(len(marked_cells), fl, dtype=np.int32))
 
 boundaries = [(1, lambda x: np.isclose(x[0], 0)),
               (2, lambda x: np.isclose(x[0], 1))]
@@ -40,7 +40,7 @@ for (marker, locator) in boundaries:
 facet_indices = np.array(np.hstack(facet_indices), dtype=np.int32)
 facet_markers = np.array(np.hstack(facet_markers), dtype=np.int32)
 sorted_facets = np.argsort(facet_indices)
-facet_tag = MeshTags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
+facet_tag = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
 
 # Define the boundary conditions
 
