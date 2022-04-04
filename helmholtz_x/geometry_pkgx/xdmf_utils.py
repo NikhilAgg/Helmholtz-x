@@ -4,12 +4,8 @@ rank = MPI.COMM_WORLD.rank
 
 import meshio
 import dolfinx.io
-<<<<<<< HEAD
 from dolfinx.fem import Function, FunctionSpace, locate_dofs_topological
 from numpy import array
-=======
-
->>>>>>> 584a85f443b9456290c3724940196875268be88b
 def create_mesh(mesh, cell_type, prune_z):
     
     cells = mesh.get_cells_type(cell_type)
@@ -44,16 +40,11 @@ def write_xdmf_mesh(name, dimension):
     print(str(dimension)+"D XDMF mesh is generated.")
 
 def load_xdmf_mesh(name):
-<<<<<<< HEAD
-=======
-
->>>>>>> 584a85f443b9456290c3724940196875268be88b
     mesh_loader_name = name + ".xdmf"
     tag_loader_name = name + "_tags.xdmf"
     with dolfinx.io.XDMFFile(MPI.COMM_WORLD, mesh_loader_name, "r") as xdmf:
         mesh = xdmf.read_mesh(name="Grid")
         cell_tags = xdmf.read_meshtags(mesh, name="Grid")
-<<<<<<< HEAD
     tdim = mesh.topology.dim
     mesh.topology.create_connectivity(tdim-1, tdim)
     with dolfinx.io.XDMFFile(MPI.COMM_WORLD, tag_loader_name, "r") as xdmf:
@@ -149,10 +140,3 @@ def derivatives_visualizer(filename, shape_derivatives, geometry, normalize=True
     with dolfinx.io.XDMFFile(MPI.COMM_WORLD, filename+".xdmf", "w") as xdmf:
         xdmf.write_mesh(geometry.mesh)
         xdmf.write_function(U)
-=======
-    mesh.topology.create_connectivity(mesh.topology.dim, mesh.topology.dim-1)
-    with dolfinx.io.XDMFFile(MPI.COMM_WORLD, tag_loader_name, "r") as xdmf:
-        facet_tags = xdmf.read_meshtags(mesh, name="Grid")
-    print("XDMF Mesh is loaded.")
-    return mesh, cell_tags, facet_tags
->>>>>>> 584a85f443b9456290c3724940196875268be88b

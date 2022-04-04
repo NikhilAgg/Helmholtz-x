@@ -1,11 +1,6 @@
 import dolfinx
-<<<<<<< HEAD
 from dolfinx.fem import Function, FunctionSpace, dirichletbc, form
 from dolfinx.fem.petsc import assemble_matrix
-=======
-from dolfinx.fem import Function, FunctionSpace, DirichletBC
-from dolfinx.fem.assemble import assemble_matrix
->>>>>>> 584a85f443b9456290c3724940196875268be88b
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
 from petsc4py import PETSc
@@ -74,11 +69,7 @@ class PassiveFlame:
                 u_bc.x.scatter_forward()
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
                 dofs = dolfinx.fem.locate_dofs_topological(self.V, self.fdim, facets)
-<<<<<<< HEAD
                 bc = dirichletbc(u_bc, dofs)
-=======
-                bc = DirichletBC(u_bc, dofs)
->>>>>>> 584a85f443b9456290c3724940196875268be88b
                 self.bcs.append(bc)
             if 'Robin' in boundary_conditions[i]:
                 Y = boundary_conditions[i]['Robin']
