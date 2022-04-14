@@ -7,12 +7,13 @@ from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, inner
 from petsc4py import PETSc
 import numpy as np
+from scipy.sparse import csr_matrix
 
 class ActiveFlame:
 
     gamma = 1.4
 
-    def __init__(self, mesh, subdomains, x_r, rho_u, Q, U, FTF, degree=1):
+    def __init__(self, mesh, subdomains, x_r, rho_u, Q, U, FTF, degree=1, bloch_object=None):
 
         self.mesh = mesh
         self.subdomains = subdomains
@@ -22,6 +23,7 @@ class ActiveFlame:
         self.U = U
         self.FTF = FTF
         self.degree = degree
+        self.bloch_object = bloch_object
 
         self.coeff = (self.gamma - 1) / rho_u * Q / U
 
@@ -46,28 +48,25 @@ class ActiveFlame:
             # print(fl,x)
             self._a[str(fl)] = self._assemble_left_vector(fl)
             self._b[str(fl)] = self._assemble_right_vector(x)
-        
-
-    @property
-    def submatrices(self):
-        return self._D_kj
 
     @property
     def matrix(self):
         return self._D
     @property
+    def submatrices(self):
+        return self._D_kj
+    @property
+    def adjoint_submatrices(self):
+        return self._D_kj_adj
+    @property
+    def adjoint_matrix(self):
+        return self._D_adj
+    @property
     def a(self):
         return self._a
     @property
     def b(self):
-        return self._b        
-    @property
-    def adjoint_submatrices(self):
-        return self._D_kj_adj
-
-    @property
-    def adjoint_matrix(self):
-        return self._D_adj
+        return self._b
 
     def _assemble_left_vector(self, fl):
         """
@@ -194,7 +193,7 @@ class ActiveFlame:
             root = MPI.COMM_WORLD.rank
         b_root = MPI.COMM_WORLD.allreduce(root, op=MPI.MAX)
         B = MPI.COMM_WORLD.bcast(B, root=b_root)
-        print("B ",B)
+        # print("B ",B)
         return B
 
     @staticmethod
@@ -306,12 +305,10 @@ class ActiveFlame:
             mat.assemblyBegin()
             mat.assemblyEnd()
 
-        # print(mat.getValues(range(global_size),range(global_size)))
         if problem_type == 'direct':
             self._D_kj = mat
         elif problem_type == 'adjoint':
             self._D_kj_adj = mat
-        # print("Matrix D generated.")
 
     def assemble_matrix(self, omega, problem_type='direct'):
         """
@@ -355,6 +352,23 @@ class ActiveFlame:
         dD_domega = self.coeff * dD_domega
 
         return dD_domega
+
+    def blochify(self, problem_type='direct'):
+
+        if problem_type == 'direct':
+
+            D_kj_bloch = self.bloch_object.blochify(self.submatrices)
+            self._D_kj = D_kj_bloch
+
+        elif problem_type == 'adjoint':
+
+            D_kj_adj_bloch = self.bloch_object.blochify(self.adjoint_submatrices)
+            self._D_kj_adj = D_kj_adj_bloch
+
+    @submatrices.setter
+    def submatrices(self, value):
+        'setting'
+        self._D_kj = value
 
 
 class ActiveFlameNT:

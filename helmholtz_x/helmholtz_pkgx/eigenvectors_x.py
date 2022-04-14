@@ -3,7 +3,7 @@ import numpy as np
 from slepc4py import SLEPc
 from dolfinx.fem import ( Function, FunctionSpace, form)
 from ufl import dx
-from .petsc4py_utils import multiply, vector_matrix_vector
+from .petsc4py_utils import multiply, vector_matrix_vector, matrix_vector
 from mpi4py import MPI
 from petsc4py import PETSc
 
@@ -24,10 +24,6 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
 
     A = obj.getOperators()[0]
     vr, vi = A.createVecs()
-    
-    if mpc:
-        mpc.backsubstitution(vr)
-        mpc.backsubstitution(vi)
 
     if isinstance(obj, SLEPc.EPS):
         eig = obj.getEigenvalue(i)
@@ -40,7 +36,10 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     elif isinstance(obj, SLEPc.PEP):
         eig = obj.getEigenpair(i, vr, vi)
         omega = eig
-    
+
+    if mpc:
+        vr = matrix_vector(mpc,vr)
+
     V = FunctionSpace(mesh, ("CG", degree))
     p = Function(V)
 
@@ -55,9 +54,9 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     #     if rank == 0: aux[0] = x[0]
     #     aux.assemble()
     #     x0 = aux.sum()
-    #     sign = x0/abs(x0)
-    #     x.scale(1.0/sign)
-
+    #     sign = x0 / abs(x0)
+    #     x.scale(1.0 / sign)
+    #
     # FixSign(vr)
 
     p.vector.setArray(vr.array)

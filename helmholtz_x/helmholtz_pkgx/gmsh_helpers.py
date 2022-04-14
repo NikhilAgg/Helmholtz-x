@@ -12,12 +12,11 @@ import gmsh
 from mpi4py import MPI
 from dolfinx.cpp.mesh import to_type, cell_entity_type
 from dolfinx.cpp.graph import AdjacencyList_int32
-from dolfinx.mesh import create_meshtags, create_mesh
+from dolfinx.mesh import meshtags, create_mesh, meshtags
 
 from dolfinx.cpp.io import distribute_entity_data, perm_gmsh
 from dolfinx.io import (extract_gmsh_geometry,
                         extract_gmsh_topology_and_markers, ufl_mesh_from_gmsh)
-from dolfinx.mesh import  create_mesh, create_meshtags
 
 # mesh, cell_tags, facet_tags = read_from_msh("MeshDir/rijke.msh", cell_data=True, facet_data=True, gdim=2)
 
