@@ -365,10 +365,10 @@ class ActiveFlame:
             D_kj_adj_bloch = self.bloch_object.blochify(self.adjoint_submatrices)
             self._D_kj_adj = D_kj_adj_bloch
 
-    @submatrices.setter
-    def submatrices(self, value):
-        'setting'
-        self._D_kj = value
+    # @submatrices.setter
+    # def submatrices(self, value):
+    #     'setting'
+    #     self._D_kj = value
 
 
 class ActiveFlameNT:
