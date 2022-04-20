@@ -130,12 +130,12 @@ def derivatives_visualizer(filename, shape_derivatives, geometry, normalize=True
     fdim = geometry.mesh.topology.dim - 1
     U = Function(V)
 
-
-    for i in shape_derivatives:
-        print(i,shape_derivatives[i][0])           
-        facets = array(geometry.facet_tags.indices[geometry.facet_tags.values == i])
+    print(shape_derivatives)
+    for tag, derivative in shape_derivatives.items():
+        print(tag, derivative)           
+        facets = array(geometry.facet_tags.indices[geometry.facet_tags.values == tag])
         dofs = locate_dofs_topological(V, fdim, facets)
-        U.x.array[dofs] = shape_derivatives[i][0] #first element of boundary
+        U.x.array[dofs] = derivative #first element of boundary
 
     with dolfinx.io.XDMFFile(MPI.COMM_WORLD, filename+".xdmf", "w") as xdmf:
         xdmf.write_mesh(geometry.mesh)

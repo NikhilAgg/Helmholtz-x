@@ -1,9 +1,3 @@
-<<<<<<< HEAD
-=======
-from dolfinx.fem import Constant 
-import numpy as np
-import scipy.linalg
->>>>>>> 584a85f443b9456290c3724940196875268be88b
 
 
 from dolfinx.fem import Constant, VectorFunctionSpace, Function, dirichletbc, locate_dofs_topological, set_bc, form
@@ -13,14 +7,11 @@ from ufl import  FacetNormal, grad, dot, inner, Measure, div, variable
 from ufl.operators import Dn #Dn(f) := dot(grad(f), n).
 from petsc4py import PETSc
 from mpi4py import MPI
-<<<<<<< HEAD
 from geomdl import BSpline, utilities, helpers
 
 import numpy as np
 import scipy.linalg
 import os
-=======
->>>>>>> 584a85f443b9456290c3724940196875268be88b
 
 
 
@@ -215,21 +206,20 @@ class ShapeDerivativesRijke2D:
 def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega, 
                                p_dir1, p_dir2, p_adj1, p_adj2, c):
     
+    #Clean Master and Slave tags
+    for k in list(boundary_conditions.keys()):
+        if boundary_conditions[k]=='Master' or boundary_conditions[k]=='Slave':
+            del boundary_conditions[k]
+
     ds = Measure('ds', domain = geometry.mesh, subdomain_data = geometry.facet_tags)
     p_adj1_conj, p_adj2_conj = conjugate_function(p_adj1), conjugate_function(p_adj2)
     results = {} 
 
     for tag, value in boundary_conditions.items():
         C = Constant(geometry.mesh, PETSc.ScalarType(1))
-<<<<<<< HEAD
         A = assemble_scalar(form(C * ds(tag)))
         A = MPI.COMM_WORLD.allreduce(A, op=MPI.SUM) # For parallel runs
         C = C / A
-=======
-        A = assemble_scalar(C * ds(tag))
-        A = geometry.mesh.allreduce(A, op=MPI.SUM) # For parallel runs
-        C = 1 / A
->>>>>>> 584a85f443b9456290c3724940196875268be88b
 
         G = []
         if value == 'Dirichlet':
@@ -259,7 +249,7 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
                       [G[2], G[3]]))
         
         eig = scipy.linalg.eigvals(A)
-        print("eig: ",eig)
+        # print("eig: ",eig)
         results[tag] = eig.tolist()
     
     return results
