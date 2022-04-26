@@ -28,7 +28,7 @@ class Blochifier:
 
         facets_slave = np.array(self.facet_tags.indices[self.facet_tags.values == slave_tag])
         dofs_slave = locate_dofs_topological(self.V, fdim, facets_slave)
-        assert len(dofs_master) ==  len(dofs_slave)
+        #assert len(dofs_master) ==  len(dofs_slave)
 
         boundary_map_points = np.vstack([dofs_master, dofs_slave])
 
