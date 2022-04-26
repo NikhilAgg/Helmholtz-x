@@ -1,162 +1,23 @@
-
-'lc_1': 5e-3,
-'lc_2': 5e-3
-
-
-n_tau
-
-n = 1
-tau = 0.003
-
----------------------------------------------
-
-B = 16
-
-Direct Eigenvalue 1 ->  (2306.757665614582-130.3090726642956j)  Direct Eigenfrequency ->  (367.13188499768216-20.739333044243622j)
-
-Direct Eigenvalue 2 ->  (5714.094981789345+255.53407200973774j)  Direct Eigenfrequency ->  (909.426461648368+40.669510688750094j)
-
-Direct Eigenvalue 3 ->  (12680.28415705856+674.0456778166182j)  Direct Eigenfrequency ->  (2018.1299034057174+107.2777014942419j)
-
-Total Execution Time:  0:00:22.203974
-
-
-
-B = 32
-
-Direct Eigenvalue 1 ->  (2910.9485717722114+541.7838720444583j)  Direct Eigenfrequency ->  (463.29185428384034+86.22758132334248j)
-
-Direct Eigenvalue 2 ->  (1883.743734453342-354.14878026514094j)  Direct Eigenfrequency ->  (299.8071268566361-56.364528969162656j)
-
-Direct Eigenvalue 3 ->  (10046.999839671018+267.5773109148047j)  Direct Eigenfrequency ->  (1599.0296877271226+42.58625169132813j)
-
-Total Execution Time:  0:00:29.190453
-
-B = 48
-
-Direct Eigenvalue 1 ->  (666.0794130084419-208.6272451703395j)  Direct Eigenfrequency ->  (106.00983107204162-33.204057332504284j)
-
-Direct Eigenvalue 2 ->  (4942.152962928201+1043.6252202833916j)  Direct Eigenfrequency ->  (786.5680735662798+166.09811254346994j)
-
-Direct Eigenvalue 3 ->  (12388.590811110498+4740.92314452092j)  Direct Eigenfrequency ->  (1971.705465531069+754.5413532692766j)
-
-Total Execution Time:  0:01:42.060657
-
-
-//////////////////////////////////////////////////////////////////////////////////////////
-
-state_space:
-
----------------------------------------------
-
-B = 16
-
-
-Direct Eigenvalue 1 ->  (3142.422356459514+596.5282510258844j)  Direct Eigenfrequency ->  (500.1320513130136+94.94041984473249j)
-
-Direct Eigenvalue 2 ->  (4144.692018019773-793.6740612019876j)  Direct Eigenfrequency ->  (659.6482222613698-126.31715004411579j)
-
-Direct Eigenvalue 3 ->  (10399.948637964606-348.08426678782246j)  Direct Eigenfrequency ->  (1655.2032336338914-55.3993316718j)
-
-Total Execution Time:  0:00:22.373424
-
-B = 32
-
-Direct Eigenvalue 1 ->  (2532.1575096101815+867.9379723452729j)  Direct Eigenfrequency ->  (403.00538434172387+138.13661859590695j)
-
-Direct Eigenvalue 2 ->  (2007.9174929324213-688.7651164507631j)  Direct Eigenfrequency ->  (319.5699943208807-109.62037291240388j)
-
-Direct Eigenvalue 3 ->  (9725.364080699901+206.78006719453901j)  Direct Eigenfrequency ->  (1547.839766811756+32.910069826885156j)
-
-Total Execution Time:  0:00:21.772509
-
-B = 48
-
-Direct Eigenvalue 1 ->  (2360.302152755631+857.2734288067152j)  Direct Eigenfrequency ->  (375.65375480150055+136.43930377592676j)
-
-Direct Eigenvalue 2 ->  (1363.5784586073637-497.33416035229305j)  Direct Eigenfrequency ->  (217.02025198098934-79.15318998852476j)
-
-Direct Eigenvalue 3 ->  (9619.022721985564+349.75371831148783j)  Direct Eigenfrequency ->  (1530.9150139172607+55.66503313404364j)
-
-Total Execution Time:  0:00:24.332771
-
-
-***********************************************************************
-
-'lc_1': 4e-3,
-'lc_2': 4e-3
-
-Total element : 92382
-
----------------------------------------------
-
-B = 16
-
-Direct Eigenvalue 1 ->  (3141.730870045994+603.6043018229162j)  Direct Eigenfrequency ->  (500.021997832221+96.06660830664946j)
-
-Direct Eigenvalue 2 ->  (4138.524960821211-803.3421991956844j)  Direct Eigenfrequency ->  (658.6667046238882-127.8558819963072j)
-
-Direct Eigenvalue 3 ->  (10498.32302226297-351.04131682210004j)  Direct Eigenfrequency ->  (1670.8600031685978-55.869960801725334j)
-
-Total Execution Time:  0:01:20.208829
-
-
-***********************************************************************
-
-'lc_1': 8e-3,
-'lc_2': 8e-3
-
-
-Total element : 13152
-
----------------------------------------------
-
-B = 16
-
-
-Direct Eigenvalue 1 ->  (3149.32027118464+555.8632069644883j)  Direct Eigenfrequency ->  (501.22988853854383+88.46837707131158j)
-
-Direct Eigenvalue 2 ->  (4183.964994589532-745.7318904069891j)  Direct Eigenfrequency ->  (665.8987106123791-118.68691657953589j)
-
-Direct Eigenvalue 3 ->  (10347.523968569805-327.46791868070335j)  Direct Eigenfrequency ->  (1646.8595883597504-52.118137962048756j)
-
-Total Execution Time:  0:00:03.443443
-
-***********************************************************************
-
-'lc_1': 2e-3,
-'lc_2': 2e-3
-
-
-Total element : 675316
-
----------------------------------------------
-
-B = 16
-
-Direct Eigenvalue 1 ->  (3167.0728282864816+545.247184538869j)  Direct Eigenfrequency ->  (504.05529575382303+86.77878462629985j)
-
-Direct Eigenvalue 2 ->  (4227.890710727658-730.8479373287906j)  Direct Eigenfrequency ->  (672.8897054646134-116.31806187439277j)
-
-Direct Eigenvalue 3 ->  (10372.035484850117-342.1600657308208j)  Direct Eigenfrequency ->  (1650.7607173384397-54.456465789707956j)
-
-Total Execution Time:  0:00:01.461915
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+XDMF Mesh is loaded.
+47672
+iter =  1,  omega = +3027.641  +560.721j,  |domega| = 5.61e+02
+iter =  2,  omega = +3168.794  +427.776j,  |domega| = 1.94e+02
+iter =  3,  omega = +3230.174  +457.748j,  |domega| = 6.83e+01
+iter =  4,  omega = +3238.288  +451.852j,  |domega| = 1.00e+01
+iter =  5,  omega = +3238.606  +451.581j,  |domega| = 4.18e-01
+iter =  6,  omega = +3238.606  +451.579j,  |domega| = 2.30e-03
+iter =  7,  omega = +3238.606  +451.579j,  |domega| = 5.06e-07
+
+Eigenvalues 1 -> 3238.606+451.579j | Eigenfrequencies ->  515.440+71.871j
+
+iter =  1,  omega = +3027.641  -560.721j,  |domega| = 5.61e+02
+iter =  2,  omega = +3168.794  -427.776j,  |domega| = 1.94e+02
+iter =  3,  omega = +3230.174  -457.748j,  |domega| = 6.83e+01
+iter =  4,  omega = +3238.288  -451.852j,  |domega| = 1.00e+01
+iter =  5,  omega = +3238.606  -451.581j,  |domega| = 4.18e-01
+iter =  6,  omega = +3238.606  -451.579j,  |domega| = 2.30e-03
+iter =  7,  omega = +3238.606  -451.579j,  |domega| = 5.06e-07
+
+Eigenvalues 1 -> 3238.606-451.579j | Eigenfrequencies ->  515.440-71.871j
+
+Total Execution Time:  0:00:57.718146
