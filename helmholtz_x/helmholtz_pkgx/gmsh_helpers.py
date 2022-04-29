@@ -1,6 +1,5 @@
 # Copyright (C) 2020 Jørgen S. Dokken
 #
-# SPDX-License-Identifier:    LGPL-3.0-or-later
 #
 # =========================================
 # GMSH model to dolfinx.Mesh converter
