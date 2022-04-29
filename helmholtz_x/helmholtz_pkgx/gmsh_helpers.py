@@ -1,6 +1,5 @@
 # Copyright (C) 2020 Jørgen S. Dokken
 #
-#
 # =========================================
 # GMSH model to dolfinx.Mesh converter
 # =========================================
