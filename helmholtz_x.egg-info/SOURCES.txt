@@ -3,6 +3,7 @@ README.md
 setup.py
 helmholtz_x/__init__.py
 helmholtz_x/io_utils.py
+helmholtz_x/paraview_saveimg.py
 helmholtz_x.egg-info/PKG-INFO
 helmholtz_x.egg-info/SOURCES.txt
 helmholtz_x.egg-info/dependency_links.txt

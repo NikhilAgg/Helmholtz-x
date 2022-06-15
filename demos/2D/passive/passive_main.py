@@ -45,7 +45,7 @@ omega, p = normalize_eigenvector(mesh, eigensolver, 0)
 
 import dolfinx.io
 p.name = "Acoustic_Wave"
-with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "p.xdmf", "w") as xdmf:
+with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "Results/p.xdmf", "w") as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p)
 

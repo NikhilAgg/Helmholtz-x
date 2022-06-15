@@ -1,11 +1,13 @@
 from mpi4py import MPI
-
-rank = MPI.COMM_WORLD.rank 
-
 import meshio
 import dolfinx.io
 from dolfinx.fem import Function, FunctionSpace, locate_dofs_topological
 from numpy import array
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
 def create_mesh(mesh, cell_type, prune_z):
     
     cells = mesh.get_cells_type(cell_type)
@@ -90,8 +92,12 @@ class XDMFReader:
     def getNumberofCells(self):
         t_imap = self.mesh.topology.index_map(self.mesh.topology.dim)
         num_cells = t_imap.size_local + t_imap.num_ghosts
-        return num_cells
-        # print("Number of cells: ", num_cells)
+        total_num_cells = comm.allreduce(num_cells, op=MPI.SUM) #sum all cells and distribute to each process
+        if rank==0:
+            print("Number of cells: {:,}".format(total_num_cells))
+            print("Number of cores: ", size)
+        return total_num_cells
+        
 
 
 def derivatives_visualizer(filename, shape_derivatives, geometry, normalize=True):
@@ -103,16 +109,17 @@ def derivatives_visualizer(filename, shape_derivatives, geometry, normalize=True
         shape_derivatives (dict): Should have shape derivatives as a dictionary
         geometry (XDMFReader): geometry object
     """
+    shape_derivatives_real = shape_derivatives.copy()
+    shape_derivatives_imag = shape_derivatives.copy()
+
+
+    for key, value in shape_derivatives.items():
+        shape_derivatives_real[key] = value[0].real
+        shape_derivatives_imag[key] = value[0].imag 
+        shape_derivatives[key] = value[0]  # get the first eigenvalue of each list
 
     if normalize:
-        shape_derivatives_real = shape_derivatives.copy()
-        shape_derivatives_imag = shape_derivatives.copy()
-
-
-        for key, value in shape_derivatives.items():
-            shape_derivatives_real[key] = value[0].real
-            shape_derivatives_imag[key] = value[0].imag 
-            shape_derivatives[key] = value[0]  # get the first eigenvalue of each list
+        
 
         max_key_real = max(shape_derivatives_real, key=lambda y: abs(shape_derivatives_real[y]))
         max_value_real = abs(shape_derivatives_real[max_key_real])
@@ -130,7 +137,7 @@ def derivatives_visualizer(filename, shape_derivatives, geometry, normalize=True
     fdim = geometry.mesh.topology.dim - 1
     U = Function(V)
 
-    print(shape_derivatives)
+    # print(shape_derivatives)
     for tag, derivative in shape_derivatives.items():
         print(tag, derivative)           
         facets = array(geometry.facet_tags.indices[geometry.facet_tags.values == tag])

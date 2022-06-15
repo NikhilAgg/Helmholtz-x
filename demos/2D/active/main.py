@@ -60,6 +60,6 @@ print(omega)
 
 from dolfinx.io import XDMFFile
 p.name = "Acoustic_Wave"
-with XDMFFile(MPI.COMM_WORLD, "p.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
+with XDMFFile(MPI.COMM_WORLD, "Results/p.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p)

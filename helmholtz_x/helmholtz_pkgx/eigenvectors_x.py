@@ -119,6 +119,6 @@ def normalize_adjoint(omega_dir, p_dir, p_adj, matrices, D=None):
 
     p_adj1 = p_adj
     p_adj1.vector.setArray(p_adj_vec.getArray())
-
+    p_adj1.x.scatter_forward()
 
     return p_adj1

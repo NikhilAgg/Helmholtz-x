@@ -9,6 +9,7 @@ from petsc4py import PETSc
 import numpy as np
 from scipy.sparse import csr_matrix
 
+
 class ActiveFlame:
 
     gamma = 1.4
@@ -88,9 +89,9 @@ class ActiveFlame:
         V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(volume_form), op=MPI.SUM)
         b = Function(self.V)
         b.x.array[:] = 0
-        const = Constant(self.mesh, (1/V_fl))
+        const = Constant(self.mesh, (PETSc.ScalarType(1/V_fl))) 
         gradient_form = form(inner(const, phi_k)*dx(fl))
-        a = assemble_vector(b.vector, gradient_form)#
+        a = assemble_vector(b.vector, gradient_form)
         # print(a.array)
         b.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
         # print(b.x.array)
@@ -142,7 +143,8 @@ class ActiveFlame:
                 cell = []
         else:
             cell = compute_colliding_cells(self.mesh, cell_candidates, point)
-        
+            # print("Cells: ", cell, type(cell))
+
         # Data required for pull back of coordinate
         gdim = self.mesh.geometry.dim
         num_local_cells = self.mesh.topology.index_map(tdim).size_local
@@ -173,6 +175,7 @@ class ActiveFlame:
             if cell < num_local_cells:
                 # Map point in cell back to reference element
                 cell_geometry[:] = x[x_dofs[cell], :gdim]
+                # print("DOFS:",[point[:gdim]], cell_geometry)
                 point_ref = self.mesh.geometry.cmap.pull_back([point[:gdim]], cell_geometry)
                 dphi = coordinate_element.tabulate(1, point_ref)[1:,0,:]
                 dphi = dphi.reshape((dphi.shape[0], dphi.shape[1]))
@@ -186,6 +189,7 @@ class ActiveFlame:
                 d_dv = np.dot(d_dx, v)[:, 0]
                 for i in range(len(d_dv)):
                     B.append([global_dofs[i], d_dv[i]])
+                    
             else:
                 print(MPI.COMM_WORLD.rank, "Ghost", cell) 
         root = 0 #it was -1
@@ -193,7 +197,7 @@ class ActiveFlame:
             root = MPI.COMM_WORLD.rank
         b_root = MPI.COMM_WORLD.allreduce(root, op=MPI.MAX)
         B = MPI.COMM_WORLD.bcast(B, root=b_root)
-        # print("B ",B)
+        print("B ",B)
         return B
 
     @staticmethod
@@ -336,6 +340,7 @@ class ActiveFlame:
 
             z = self.FTF(omega)
             self._D = self._D_kj*z*self.coeff
+                        
 
         elif problem_type == 'adjoint':
 
@@ -463,7 +468,7 @@ class ActiveFlameNT:
         #print(len(tau_func.x.array[:]), len(np.exp(self.omega*1j*tau.x.array)))
         tau_func.x.array[:] = np.exp(self.omega*1j*tau.x.array) 
 
-        a = dolfinx.fem.assemble_vector(b.vector, form(n * tau_func * inner(const, phi_k) * dx(fl)))
+        a = assemble_vector(b.vector, form(n * tau_func * inner(const, phi_k) * dx(fl)))
         b.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
         indices1 = np.array(np.flatnonzero(a.getArray()),dtype=np.int32)
         a = b.x.array

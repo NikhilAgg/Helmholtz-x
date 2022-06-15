@@ -216,8 +216,10 @@ def ShapeDerivativesDegenerate(geometry, boundary_conditions, omega,
     results = {} 
 
     for tag, value in boundary_conditions.items():
+        # print("Shape derivative of ", tag)
         C = Constant(geometry.mesh, PETSc.ScalarType(1))
         A = assemble_scalar(form(C * ds(tag)))
+        # print("Area of : ", A)
         A = MPI.COMM_WORLD.allreduce(A, op=MPI.SUM) # For parallel runs
         C = C / A
 
