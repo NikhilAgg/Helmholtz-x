@@ -1,0 +1,265 @@
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 37,176
+Number of cores:  1
+Matrix D assembled
+iter =  1,  omega = +1159.63630953  +8.35037668j,  |domega| = 1.76e+01
+iter =  2,  omega = +1158.07090025  +24.14236570j,  |domega| = 1.59e+01
+iter =  3,  omega = +1158.06873516  +24.16237277j,  |domega| = 2.01e-02
+iter =  4,  omega = +1158.06873376  +24.16238459j,  |domega| = 1.19e-05
+iter =  5,  omega = +1158.06873376  +24.16238459j,  |domega| = 1.11e-11
+Eigenvalue-> 1158.069+24.162j | Eigenfrequency ->  184.312+3.846j
+Total Execution Time:  0:00:09.109830
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 37,324
+Number of cores:  2
+Matrix D assembled
+iter =  1,  omega = +1159.63630953  +8.35037668j,  |domega| = 1.76e+01
+iter =  2,  omega = +1158.07090025  +24.14236570j,  |domega| = 1.59e+01
+iter =  3,  omega = +1158.06873516  +24.16237277j,  |domega| = 2.01e-02
+iter =  4,  omega = +1158.06873376  +24.16238459j,  |domega| = 1.19e-05
+iter =  5,  omega = +1158.06873376  +24.16238459j,  |domega| = 1.53e-11
+Eigenvalue-> 1158.069+24.162j | Eigenfrequency ->  184.312+3.846j
+Total Execution Time:  0:00:14.132038
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 37,492
+Number of cores:  3
+Matrix D assembled
+iter =  1,  omega = +1159.63630953  +8.35037668j,  |domega| = 1.76e+01
+iter =  2,  omega = +1158.07090025  +24.14236570j,  |domega| = 1.59e+01
+iter =  3,  omega = +1158.06873516  +24.16237277j,  |domega| = 2.01e-02
+iter =  4,  omega = +1158.06873376  +24.16238459j,  |domega| = 1.19e-05
+iter =  5,  omega = +1158.06873376  +24.16238459j,  |domega| = 9.78e-12
+Eigenvalue-> 1158.069+24.162j | Eigenfrequency ->  184.312+3.846j
+Total Execution Time:  0:00:13.139028
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 37,682
+Number of cores:  4
+Matrix D assembled
+Traceback (most recent call last):
+  File "main.py", line 65, in <module>
+    E = fixed_point_iteration_pep(matrices, D, 1160, nev=2, i=0, print_results= False)
+  File "/home/ee331/Dev/Helmholtz-x/helmholtz_x/helmholtz_pkgx/eigensolvers_x.py", line 161, in fixed_point_iteration_pep
+    E = pep_solver(nlinA, B, C, target, nev, print_results=print_results)
+  File "/home/ee331/Dev/Helmholtz-x/helmholtz_x/helmholtz_pkgx/eigensolvers_x.py", line 113, in pep_solver
+    Q.solve()
+  File "SLEPc/PEP.pyx", line 1040, in slepc4py.SLEPc.PEP.solve
+petsc4py.PETSc.Error: error code 76
+[2] PEPSolve() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/pep/interface/pepsolve.c:95
+[2] PEPSetUp() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/pep/interface/pepsetup.c:205
+[2] STMatSetUp() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/sys/classes/st/interface/stsolve.c:767
+[2] KSPSetUp() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/ksp/interface/itfunc.c:407
+[2] PCSetUp() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/pc/interface/precon.c:990
+[2] PCSetUp_LU() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/pc/impls/factor/lu/lu.c:131
+[2] MatLUFactorNumeric() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/mat/interface/matrix.c:3020
+[2] MatFactorNumeric_MUMPS() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/mat/impls/aij/mpi/mumps/mumps.c:1664
+[2] Error in external library
+[2] Error reported by MUMPS in numerical factorization phase: INFOG(1)=-9, INFO(2)=48874
+Traceback (most recent call last):
+  File "main.py", line 65, in <module>
+    E = fixed_point_iteration_pep(matrices, D, 1160, nev=2, i=0, print_results= False)
+  File "/home/ee331/Dev/Helmholtz-x/helmholtz_x/helmholtz_pkgx/eigensolvers_x.py", line 161, in fixed_point_iteration_pep
+    E = pep_solver(nlinA, B, C, target, nev, print_results=print_results)
+  File "/home/ee331/Dev/Helmholtz-x/helmholtz_x/helmholtz_pkgx/eigensolvers_x.py", line 113, in pep_solver
+    Q.solve()
+  File "SLEPc/PEP.pyx", line 1040, in slepc4py.SLEPc.PEP.solve
+petsc4py.PETSc.Error: error code 76
+[3] PEPSolve() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/pep/interface/pepsolve.c:95
+[3] PEPSetUp() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/pep/interface/pepsetup.c:205
+[3] STMatSetUp() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/sys/classes/st/interface/stsolve.c:767
+[3] KSPSetUp() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/ksp/interface/itfunc.c:407
+[3] PCSetUp() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/pc/interface/precon.c:990
+[3] PCSetUp_LU() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/pc/impls/factor/lu/lu.c:131
+[3] MatLUFactorNumeric() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/mat/interface/matrix.c:3020
+[3] MatFactorNumeric_MUMPS() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/mat/impls/aij/mpi/mumps/mumps.c:1664
+[3] Error in external library
+[3] Error reported by MUMPS in numerical factorization phase: INFOG(1)=-9, INFO(2)=2
+Traceback (most recent call last):
+  File "main.py", line 65, in <module>
+    E = fixed_point_iteration_pep(matrices, D, 1160, nev=2, i=0, print_results= False)
+  File "/home/ee331/Dev/Helmholtz-x/helmholtz_x/helmholtz_pkgx/eigensolvers_x.py", line 161, in fixed_point_iteration_pep
+    E = pep_solver(nlinA, B, C, target, nev, print_results=print_results)
+  File "/home/ee331/Dev/Helmholtz-x/helmholtz_x/helmholtz_pkgx/eigensolvers_x.py", line 113, in pep_solver
+    Q.solve()
+  File "SLEPc/PEP.pyx", line 1040, in slepc4py.SLEPc.PEP.solve
+petsc4py.PETSc.Error: error code 76
+[0] PEPSolve() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/pep/interface/pepsolve.c:95
+[0] PEPSetUp() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/pep/interface/pepsetup.c:205
+[0] STMatSetUp() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/sys/classes/st/interface/stsolve.c:767
+[0] KSPSetUp() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/ksp/interface/itfunc.c:407
+[0] PCSetUp() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/pc/interface/precon.c:990
+[0] PCSetUp_LU() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/pc/impls/factor/lu/lu.c:131
+[0] MatLUFactorNumeric() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/mat/interface/matrix.c:3020
+[0] MatFactorNumeric_MUMPS() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/mat/impls/aij/mpi/mumps/mumps.c:1664
+[0] Error in external library
+[0] Error reported by MUMPS in numerical factorization phase: INFOG(1)=-9, INFO(2)=2
+Traceback (most recent call last):
+  File "main.py", line 65, in <module>
+    E = fixed_point_iteration_pep(matrices, D, 1160, nev=2, i=0, print_results= False)
+  File "/home/ee331/Dev/Helmholtz-x/helmholtz_x/helmholtz_pkgx/eigensolvers_x.py", line 161, in fixed_point_iteration_pep
+    E = pep_solver(nlinA, B, C, target, nev, print_results=print_results)
+  File "/home/ee331/Dev/Helmholtz-x/helmholtz_x/helmholtz_pkgx/eigensolvers_x.py", line 113, in pep_solver
+    Q.solve()
+  File "SLEPc/PEP.pyx", line 1040, in slepc4py.SLEPc.PEP.solve
+petsc4py.PETSc.Error: error code 76
+[1] PEPSolve() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/pep/interface/pepsolve.c:95
+[1] PEPSetUp() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/pep/interface/pepsetup.c:205
+[1] STMatSetUp() at /home/ee331/Dev/Venvs/v042c/installation/slepc/src/sys/classes/st/interface/stsolve.c:767
+[1] KSPSetUp() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/ksp/interface/itfunc.c:407
+[1] PCSetUp() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/pc/interface/precon.c:990
+[1] PCSetUp_LU() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/ksp/pc/impls/factor/lu/lu.c:131
+[1] MatLUFactorNumeric() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/mat/interface/matrix.c:3020
+[1] MatFactorNumeric_MUMPS() at /home/ee331/Dev/Venvs/v042c/installation/petsc/src/mat/impls/aij/mpi/mumps/mumps.c:1664
+[1] Error in external library
+[1] Error reported by MUMPS in numerical factorization phase: INFOG(1)=-9, INFO(2)=2
+--------------------------------------------------------------------------
+Primary job  terminated normally, but 1 process returned
+a non-zero exit code. Per user-direction, the job has been aborted.
+--------------------------------------------------------------------------
+--------------------------------------------------------------------------
+mpirun detected that one or more processes exited with non-zero status, thus causing
+the job to be terminated. The first process to do so was:
+
+  Process name: [[18398,1],0]
+  Exit code:    1
+--------------------------------------------------------------------------
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 37,805
+Number of cores:  5
+Matrix D assembled
+iter =  1,  omega = +1164.76652005  +61.72635962j,  |domega| = 7.10e+01
+iter =  2,  omega = +1161.93292473  +108.97855419j,  |domega| = 4.73e+01
+iter =  3,  omega = +1162.32702983  +109.63684804j,  |domega| = 7.67e-01
+iter =  4,  omega = +1162.33112813  +109.63925683j,  |domega| = 4.75e-03
+iter =  5,  omega = +1162.33112853  +109.63925659j,  |domega| = 4.61e-07
+iter =  6,  omega = +1162.33112853  +109.63925659j,  |domega| = 3.80e-11
+Eigenvalue-> 1162.331+109.639j | Eigenfrequency ->  184.991+17.450j
+Total Execution Time:  0:00:09.108782
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 37,930
+Number of cores:  6
+Matrix D assembled
+iter =  1,  omega = +1159.63630953  +8.35037668j,  |domega| = 1.76e+01
+iter =  2,  omega = +1158.07090025  +24.14236570j,  |domega| = 1.59e+01
+iter =  3,  omega = +1158.06873516  +24.16237277j,  |domega| = 2.01e-02
+iter =  4,  omega = +1158.06873376  +24.16238459j,  |domega| = 1.19e-05
+iter =  5,  omega = +1158.06873376  +24.16238459j,  |domega| = 9.97e-12
+Eigenvalue-> 1158.069+24.162j | Eigenfrequency ->  184.312+3.846j
+Total Execution Time:  0:00:18.454412
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 38,133
+Number of cores:  7
+Matrix D assembled
+iter =  1,  omega = +1159.63630953  +8.35037668j,  |domega| = 1.76e+01
+iter =  2,  omega = +1158.07090025  +24.14236570j,  |domega| = 1.59e+01
+iter =  3,  omega = +1158.06873516  +24.16237277j,  |domega| = 2.01e-02
+iter =  4,  omega = +1158.06873376  +24.16238459j,  |domega| = 1.19e-05
+iter =  5,  omega = +1158.06873376  +24.16238459j,  |domega| = 9.32e-11
+Eigenvalue-> 1158.069+24.162j | Eigenfrequency ->  184.312+3.846j
+Total Execution Time:  0:00:12.129333
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 38,264
+Number of cores:  8
+Matrix D assembled
+iter =  1,  omega = +1159.63630953  +8.35037668j,  |domega| = 1.76e+01
+iter =  2,  omega = +1158.07090025  +24.14236570j,  |domega| = 1.59e+01
+iter =  3,  omega = +1158.06873516  +24.16237277j,  |domega| = 2.01e-02
+iter =  4,  omega = +1158.06873376  +24.16238459j,  |domega| = 1.19e-05
+iter =  5,  omega = +1158.06873376  +24.16238459j,  |domega| = 5.37e-11
+Eigenvalue-> 1158.069+24.162j | Eigenfrequency ->  184.312+3.846j
+Total Execution Time:  0:00:09.950041
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 38,451
+Number of cores:  9
+Matrix D assembled
+iter =  1,  omega = +1159.27775533  +21.14525230j,  |domega| = 3.04e+01
+iter =  2,  omega = +1157.32590242  +46.44441339j,  |domega| = 2.54e+01
+iter =  3,  omega = +1157.33256189  +46.53373132j,  |domega| = 8.96e-02
+iter =  4,  omega = +1157.33259174  +46.53386833j,  |domega| = 1.40e-04
+iter =  5,  omega = +1157.33259174  +46.53386833j,  |domega| = 7.48e-10
+Eigenvalue-> 1157.333+46.534j | Eigenfrequency ->  184.195+7.406j
+Total Execution Time:  0:00:13.139872
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 38,581
+Number of cores:  10
+Matrix D assembled
+iter =  1,  omega = +1168.86648696  -35.38792902j,  |domega| = 2.72e+01
+iter =  2,  omega = +1179.26194869  -65.39502271j,  |domega| = 3.18e+01
+iter =  3,  omega = +1179.37741405  -65.44098917j,  |domega| = 1.24e-01
+iter =  4,  omega = +1179.37764676  -65.44085355j,  |domega| = 2.69e-04
+iter =  5,  omega = +1179.37764676  -65.44085354j,  |domega| = 2.32e-09
+Eigenvalue-> 1179.378-65.441j | Eigenfrequency ->  187.704-10.415j
+Total Execution Time:  0:00:07.320212
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 38,751
+Number of cores:  11
+Matrix D assembled
+iter =  1,  omega = +1159.90492700  +5.08155541j,  |domega| = 1.44e+01
+iter =  2,  omega = +1158.54999699  +18.18510378j,  |domega| = 1.32e+01
+iter =  3,  omega = +1158.54832731  +18.19624813j,  |domega| = 1.13e-02
+iter =  4,  omega = +1158.54832643  +18.19625260j,  |domega| = 4.55e-06
+iter =  5,  omega = +1158.54832643  +18.19625260j,  |domega| = 3.53e-11
+Eigenvalue-> 1158.548+18.196j | Eigenfrequency ->  184.389+2.896j
+Total Execution Time:  0:00:08.401199
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 38,896
+Number of cores:  12
+Matrix D assembled
+iter =  1,  omega = +1159.63630953  +8.35037668j,  |domega| = 1.76e+01
+iter =  2,  omega = +1158.07090025  +24.14236570j,  |domega| = 1.59e+01
+iter =  3,  omega = +1158.06873516  +24.16237277j,  |domega| = 2.01e-02
+iter =  4,  omega = +1158.06873376  +24.16238459j,  |domega| = 1.19e-05
+iter =  5,  omega = +1158.06873376  +24.16238459j,  |domega| = 2.36e-11
+Eigenvalue-> 1158.069+24.162j | Eigenfrequency ->  184.312+3.846j
+Total Execution Time:  0:00:10.005634
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 39,095
+Number of cores:  13
+Matrix D assembled
+iter =  1,  omega = +1159.37731915  +13.30618912j,  |domega| = 2.26e+01
+iter =  2,  omega = +1157.60131517  +32.96622426j,  |domega| = 1.97e+01
+iter =  3,  omega = +1157.59983657  +33.00621395j,  |domega| = 4.00e-02
+iter =  4,  omega = +1157.59983704  +33.00625104j,  |domega| = 3.71e-05
+iter =  5,  omega = +1157.59983704  +33.00625104j,  |domega| = 7.32e-11
+Eigenvalue-> 1157.600+33.006j | Eigenfrequency ->  184.238+5.253j
+Total Execution Time:  0:00:12.085407
+ 
+Calculating eigenvalues 
+Invalid MIT-MAGIC-COOKIE-1 keyXDMF Mesh is loaded.
+Number of cells: 39,171
+Number of cores:  14
+Matrix D assembled
+iter =  1,  omega = +1160.66645334  +40.69893777j,  |domega| = 4.99e+01
+iter =  2,  omega = +1158.54488358  +77.86470437j,  |domega| = 3.72e+01
+iter =  3,  omega = +1158.64777177  +78.17107998j,  |domega| = 3.23e-01
+iter =  4,  omega = +1158.64848145  +78.17199249j,  |domega| = 1.16e-03
+iter =  5,  omega = +1158.64848148  +78.17199250j,  |domega| = 3.50e-08
+iter =  6,  omega = +1158.64848148  +78.17199250j,  |domega| = 1.10e-11
+Eigenvalue-> 1158.648+78.172j | Eigenfrequency ->  184.405+12.441j
+Total Execution Time:  0:00:09.602501
+Total runtime is: 159 seconds.
+
