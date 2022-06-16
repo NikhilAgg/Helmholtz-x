@@ -101,6 +101,8 @@ class ActiveFlame:
         global_indices = dofmaps.index_map.local_to_global(indices1)
         a = list(zip(global_indices, a[indices1]))
         # print("A", a)
+        print("Length A: ",len(a))
+
         return a
 
     def _assemble_right_vector(self, point):
@@ -198,6 +200,8 @@ class ActiveFlame:
         b_root = MPI.COMM_WORLD.allreduce(root, op=MPI.MAX)
         B = MPI.COMM_WORLD.bcast(B, root=b_root)
         print("B ",B)
+        print("Length B: ",len(B))
+
         return B
 
     @staticmethod

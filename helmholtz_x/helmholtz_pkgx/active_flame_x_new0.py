@@ -9,11 +9,7 @@ import ufl
 from petsc4py import PETSc
 import numpy as np
 from scipy.sparse import csr_matrix
-# from numba import njit, jitclass#, jit
-# from numba.experimental import jitclass
-from numba import jit
 
-# @jitclass
 class ActiveFlame:
 
     gamma = 1.4
@@ -30,13 +26,10 @@ class ActiveFlame:
         self.FTF = FTF
         self.degree = degree
         self.bloch_object = bloch_object
-        
 
         self.coeff = (self.gamma - 1) * Q / U
-
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
-
         # __________________________________________________
 
         self._a = {}
@@ -55,7 +48,7 @@ class ActiveFlame:
         self.v = TestFunction(self.V)
 
         for fl, x in enumerate(self.x_r):
-            # print(fl,x)
+            print(fl,x)
             self._a[str(fl)] = self._assemble_left_vector(fl)
             self._b[str(fl)] = self._assemble_right_vector(x)
 
@@ -145,36 +138,96 @@ class ActiveFlame:
         # print("B", right_vector, "Process", self.rank)
         return right_vector
 
-    def assemble_submatrices(self, problem_type='direct'):
+    @staticmethod
+    def _csr_matrix(a, b):
+        """ This function gets row, column and values of (row.col) pairs of vector a and b
+
+        Args:
+            a ([type]): [description]
+            b ([type]): [description]
+
+        Returns:
+            [type]: rows columns and values
+        """
+
+        # len(a) and len(b) are not the same
+
+        nnz = len(a) * len(b)
         
+
+        row = np.zeros(nnz)
+        col = np.zeros(nnz)
+        val = np.zeros(nnz, dtype=np.complex128)
+
+        for i, c in enumerate(a):
+            for j, d in enumerate(b):
+                row[i * len(b) + j] = c[0]
+                col[i * len(b) + j] = d[0]
+                val[i * len(b) + j] = c[1] * d[1]
+
+        row = row.astype(dtype='int32')
+        col = col.astype(dtype='int32')
+        # print("ROW: ",row,
+        # "COL: ",col,
+        # "VAL: ",val)
+        return row, col, val
+
+    def assemble_submatrices(self, problem_type='direct'):
+        """
+        This function handles efficient cross product of the 
+        vectors a and b calculated above and generates highly sparse 
+        matrix D_kj which represents active flame matrix without FTF and
+        other constant multiplications.
+        Parameters
+        ----------
+        problem_type : str, optional
+            Specified problem type. The default is 'direct'.
+            Matrix can be obtained by selecting problem type, other
+            option is adjoint.
+        
+        """
+
+        num_fl = len(self.x_r)  # number of flames
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
+ 
+        # print("LOCAL SIZE: ",local_size, "GLOBAL SIZE: ", global_size)
 
-        if problem_type == 'direct':
-            A = self._a[str(0)]
-            B = self._b[str(0)]
+        row = dict()
+        col = dict()
+        val = dict()
 
-        elif problem_type == 'adjoint':
-            A = self._b[str(0)]
-            B = self._a[str(0)]
+        for fl in range(num_fl):
+
+            u = None
+            v = None
+
+            if problem_type == 'direct':
+                u = self._a[str(fl)]
+                v = self._b[str(fl)]
+
+            elif problem_type == 'adjoint':
+                u = self._b[str(fl)]
+                v = self._a[str(fl)]
+
+            row[str(fl)], col[str(fl)], val[str(fl)] = self._csr_matrix(u, v)
+
+        row = np.concatenate([row[str(fl)] for fl in range(num_fl)])
+        col = np.concatenate([col[str(fl)] for fl in range(num_fl)])
+        val = np.concatenate([val[str(fl)] for fl in range(num_fl)])
+
+        i = np.argsort(row)
+
+        row = row[i]
+        col = col[i]
+        val = val[i]
         
-        # print(A,B)
-        row = [item[0] for item in A]
-        col = [item[0] for item in B]
-
-        row_vals = [item[1] for item in A]
-        col_vals = [item[1] for item in B]
-
-        product = np.outer(row_vals,col_vals) 
-        # print(product)
-
-        val = product.flatten()
-
         mat = PETSc.Mat().create(PETSc.COMM_WORLD) # MPI.COMM_SELF
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('aij') 
         mat.setUp()
-        mat.setValues(row, col, val, addv=PETSc.InsertMode.ADD_VALUES)
+        for i in range(len(row)):
+            mat.setValue(row[i],col[i],val[i], addv=PETSc.InsertMode.ADD_VALUES)
         mat.assemblyBegin()
         mat.assemblyEnd()
 
@@ -184,6 +237,26 @@ class ActiveFlame:
             self._D_kj_adj = mat
 
     def assemble_matrix(self, omega, problem_type='direct'):
+        """
+        This function handles the multiplication of the obtained matrix D
+        with Flame Transfer Function and other constants.
+        The operation is
+        
+        D = (gamma - 1) / rho_u * Q / U * D_kj       
+        
+        At the end the matrix D is petsc4py.PETSc.Mat
+        Parameters
+        ----------
+        omega : complex
+            eigenvalue that found by solver
+        problem_type : str, optional
+            Specified problem type. The default is 'direct'.
+            Matrix can be obtained by selecting problem type, other
+            option is adjoint.
+        Returns
+        -------
+        petsc4py.PETSc.Mat
+        """
 
         if problem_type == 'direct':
 
@@ -196,6 +269,9 @@ class ActiveFlame:
             self._D_adj = self.coeff * z * self._D_kj_adj
 
     def get_derivative(self, omega):
+
+        """ Derivative of the unsteady heat release (flame) operator D
+        wrt the eigenvalue (complex angular frequency) omega."""
 
         z = self.FTF(omega, k=1)
         dD_domega = z * self._D_kj
@@ -214,3 +290,5 @@ class ActiveFlame:
 
             D_kj_adj_bloch = self.bloch_object.blochify(self.adjoint_submatrices)
             self._D_kj_adj = D_kj_adj_bloch
+
+ 
