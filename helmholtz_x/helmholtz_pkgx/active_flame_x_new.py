@@ -1,19 +1,13 @@
 import dolfinx
-import basix
 from dolfinx.fem  import Function, FunctionSpace, Constant, form
 from dolfinx.fem.petsc import assemble_vector
-from dolfinx.geometry import BoundingBoxTree,compute_collisions,compute_colliding_cells
 from mpi4py import MPI
 from ufl import Measure, FacetNormal, TestFunction, TrialFunction, inner, as_vector, grad
 import ufl
 from petsc4py import PETSc
 import numpy as np
-from scipy.sparse import csr_matrix
-# from numba import njit, jitclass#, jit
-# from numba.experimental import jitclass
-from numba import jit
+from math import ceil
 
-# @jitclass
 class ActiveFlame:
 
     gamma = 1.4
@@ -36,6 +30,7 @@ class ActiveFlame:
 
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size()
 
         # __________________________________________________
 
@@ -97,8 +92,39 @@ class ActiveFlame:
         a = b.x.array
         dofmaps = self.V.dofmap
         global_indices = dofmaps.index_map.local_to_global(indices1)
-        a = list(zip(global_indices, a[indices1]))
+        # a = list(zip(global_indices, a[indices1]))
+        a = list(map(list, zip(global_indices, a[indices1])))
+
+        # # New method - Parallelization        
+        # a = self.comm.gather(a, root=0)
         
+        # if self.rank == 0:
+        #     a = [j for i in a for j in i]
+        #     print("Before chunking: \n",a)
+        #     print("Length of left vector: ", len(a))
+        #     # dividing data into chunks
+        #     chunks = [[] for _ in range(self.size)]
+        #     for i, chunk in enumerate(a):
+        #         chunks[i % self.size].append(chunk)
+        # else:
+        #     a = None 
+        #     chunks = None          
+        # a = self.comm.scatter(chunks, root=0)
+        # print ("process", self.rank, "a_local:", a)
+        # return a
+
+        # Parallelization        
+        a = self.comm.gather(a, root=0)
+        if a:
+            a = [j for i in a for j in i]
+            print("Before broadcasting of A :", a)
+        else:
+            a=[]
+        a = self.comm.bcast(a,root=0)
+
+
+        return a
+
         # Parallelization        
         a = self.comm.gather(a, root=0)
         if a:
@@ -106,9 +132,10 @@ class ActiveFlame:
             print("Length of left vector: ", len(a))
         else:
             a=[]
-        # print("A", a, "Process", self.rank)
+        print("A", a, "Process", self.rank)
 
         return a
+        
 
     def _assemble_right_vector(self, point):
 
@@ -135,6 +162,23 @@ class ActiveFlame:
         dofmaps = self.V.dofmap
         global_indices = dofmaps.index_map.local_to_global(indices2)
         right_vector = list(zip(global_indices, right_vector[indices2]))
+
+        # New method - Parallelization        
+        right_vector = self.comm.gather(right_vector, root=0)
+        
+        if self.rank == 0:
+            right_vector = [j for i in right_vector for j in i]
+            print("Before chunking of B: \n",right_vector)
+            # dividing data into chunks
+            chunks = [[] for _ in range(self.size)]
+            for i, chunk in enumerate(right_vector):
+                chunks[i % self.size].append(chunk)
+        else:
+            right_vector = None 
+            chunks = None          
+        right_vector = self.comm.scatter(chunks, root=0)
+        return right_vector
+
         # Parallelization
         right_vector = self.comm.gather(right_vector, root=0)
         if self.rank==0:
@@ -142,7 +186,7 @@ class ActiveFlame:
             print("Length of right vector: ", len(right_vector))
         else:
             right_vector=[]
-        # print("B", right_vector, "Process", self.rank)
+        print("B", right_vector, "Process", self.rank)
         return right_vector
 
     def assemble_submatrices(self, problem_type='direct'):
@@ -158,26 +202,36 @@ class ActiveFlame:
             A = self._b[str(0)]
             B = self._a[str(0)]
         
+        print("A_local", A, "Process: ", self.rank)
+        print("B_local", B, "Process:", self.rank)
+
+
         # print(A,B)
         row = [item[0] for item in A]
         col = [item[0] for item in B]
-
+        
         row_vals = [item[1] for item in A]
         col_vals = [item[1] for item in B]
 
         product = np.outer(row_vals,col_vals) 
-        # print(product)
+        print(product,"process", self.rank)
+
+        # print("ROWS: ", row, self.rank)
+        # print("COLS: ", col, self.rank)
 
         val = product.flatten()
-
-        mat = PETSc.Mat().create(PETSc.COMM_WORLD) # MPI.COMM_SELF
+        mat = PETSc.Mat().create(PETSc.COMM_WORLD) 
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
-        mat.setType('aij') 
+        mat.setType('mpiaij')
+        NNZ = (len(row)) 
+        # print(len(row),self.rank)
+        mat.setPreallocationNNZ([128*len(row)*np.ones(local_size,dtype=np.int32),128*len(row)*np.ones(local_size,dtype=np.int32)])
+        mat.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
         mat.setUp()
         mat.setValues(row, col, val, addv=PETSc.InsertMode.ADD_VALUES)
         mat.assemblyBegin()
         mat.assemblyEnd()
-
+    
         if problem_type == 'direct':
             self._D_kj = mat
         elif problem_type == 'adjoint':

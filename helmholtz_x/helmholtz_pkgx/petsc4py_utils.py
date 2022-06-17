@@ -127,7 +127,7 @@ if __name__ == '__main__':
     print(x3[:])
 
     print("MATRIX VECTOR MULTIPLICATION")
-    mat32 = PETSc.Mat().create(PETSc.COMM_WORLD)  # MPI.COMM_SELF
+    mat32 = PETSc.Mat().create(comm=PETSc.COMM_WORLD)  # MPI.COMM_SELF
     mat32.setSizes([(3, 3), (2, 2)])
     mat32.setType('aij')
     mat32.setUp()
