@@ -117,7 +117,7 @@ class ActiveFlame:
         a = self.comm.gather(a, root=0)
         if a:
             a = [j for i in a for j in i]
-            print("Before broadcasting of A :", a)
+            # print("Before broadcasting of A :", a)
         else:
             a=[]
         a = self.comm.bcast(a,root=0)
@@ -168,7 +168,7 @@ class ActiveFlame:
         
         if self.rank == 0:
             right_vector = [j for i in right_vector for j in i]
-            print("Before chunking of B: \n",right_vector)
+            # print("Before chunking of B: \n",right_vector)
             # dividing data into chunks
             chunks = [[] for _ in range(self.size)]
             for i, chunk in enumerate(right_vector):
@@ -214,24 +214,31 @@ class ActiveFlame:
         col_vals = [item[1] for item in B]
 
         product = np.outer(row_vals,col_vals) 
-        print(product,"process", self.rank)
+        # print(product,"process", self.rank)
 
-        # print("ROWS: ", row, self.rank)
+        print("ROWS: ", len(row), self.rank)
         # print("COLS: ", col, self.rank)
 
         val = product.flatten()
         mat = PETSc.Mat().create(PETSc.COMM_WORLD) 
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('mpiaij')
-        NNZ = (len(row)) 
-        # print(len(row),self.rank)
-        mat.setPreallocationNNZ([128*len(row)*np.ones(local_size,dtype=np.int32),128*len(row)*np.ones(local_size,dtype=np.int32)])
+        NNZ = len(row)
+        NNZ1 = 1*len(row)*np.ones(local_size,dtype=np.int32) 
+        mat.setPreallocationNNZ([NNZ,NNZ])
         mat.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
         mat.setUp()
         mat.setValues(row, col, val, addv=PETSc.InsertMode.ADD_VALUES)
         mat.assemblyBegin()
         mat.assemblyEnd()
-    
+
+        # from scipy.sparse import csr_matrix
+        # ai, aj, av = mat.getValuesCSR()
+        # CSR = csr_matrix((av, aj, ai), shape=(global_size,global_size))
+        # import matplotlib.pyplot as plt
+        # plt.spy(CSR)
+        # plt.savefig("CSR.pdf")
+
         if problem_type == 'direct':
             self._D_kj = mat
         elif problem_type == 'adjoint':
