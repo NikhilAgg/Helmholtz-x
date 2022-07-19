@@ -18,9 +18,10 @@ c_amb = sqrt(gamma*p_amb/rho_amb)  # [m/s]
 rho_u = rho_amb  # [kg/m^3]
 rho_d = 0.85  # [kg/m^3]
 
-c_in = sqrt(gamma*p_amb/rho_u)  # [kg/m^3]
-c_out = sqrt(gamma*p_amb/rho_d)  # [kg/m^3]
-
+# c_in = sqrt(gamma*p_amb/rho_u)  # [kg/m^3]
+# c_out = sqrt(gamma*p_amb/rho_d)  # [kg/m^3]
+c_in = 400
+c_out = 400
 # Reflection coefficients
 
 R_in = - 0.975 - 0.05j  # [/] #\abs(Z} e^{\angle(Z) i} 
@@ -42,11 +43,7 @@ Y_out = 1/Z_out
 
 Q_tot = 200.  # [W]
 U_bulk = 0.1  # [m/s]
-N = 0.014  # [/]
-
-n = N*Q_tot/U_bulk  # [J/m]
-
-tau = 0.0015  # [s]
+# N = 0.014  # [/]
 
 
 x_f = np.array([[0.25, 0., 0.]])  # [m]
@@ -83,6 +80,21 @@ def rho(mesh, x_f):
     rho.interpolate(lambda x: density(x, x_f, a_f, rho_d, rho_u))
     return rho
 
+def n(mesh):
+    V = FunctionSpace(mesh, ("CG", 1))
+    n = Function(V)
+    n.x.array[:] = 1
+    # x = V.tabulate_dof_coordinates()   
+    # n.interpolate(lambda x: 1)
+    return n
+
+def tau(mesh):
+    V = FunctionSpace(mesh, ("CG", 1))
+    tau = Function(V)
+    tau.x.array[:] = 0.001
+    # x = V.tabulate_dof_coordinates()   
+    # n.interpolate(lambda x: 1)
+    return tau
 
 def c(mesh):
     V = FunctionSpace(mesh, ("DG", 0))

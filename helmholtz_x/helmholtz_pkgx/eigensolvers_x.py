@@ -386,3 +386,65 @@ def fixed_point_iteration_ntau(operators, target, mesh, subdomains,
             ))
 
     return E
+
+def fixed_point_iteration_ntau_new( operators, target, mesh, subdomains,
+                                    w, rho, Q, U, n, tau, x_r, 
+                                    degree=1, nev=2, i=0,
+                                    tol=1e-8, maxiter=50,
+                                    print_results=False,
+                                    problem_type='direct'):
+
+    A = operators.A
+    C = operators.C
+    B = operators.B
+    if problem_type == 'adjoint':
+        B = operators.B_adj
+
+    omega = np.zeros(maxiter, dtype=complex)
+    f = np.zeros(maxiter, dtype=complex)
+    alpha = np.zeros(maxiter, dtype=complex)
+    E = pep_solver(A, B, C, target, nev, print_results=print_results)
+    vr, vi = A.getVecs()
+    eig = E.getEigenpair(i, vr, vi)
+    omega[0] = eig
+    alpha[0] = .5
+
+    domega = 2 * tol
+    k = - 1
+
+    # formatting
+    s = "{:.0e}".format(tol)
+    s = int(s[-2:])
+    s = "{{:+.{}f}}".format(s)
+
+    from helmholtz_x.helmholtz_pkgx.active_flame_x_new import ActiveFlameNT
+
+    while abs(domega) > tol:
+
+        k += 1
+        
+        D = ActiveFlameNT(mesh, subdomains, w, rho, Q, U, n, tau, omega[k], x_r, 
+                    degree=degree)
+                    
+        D.assemble_submatrices()
+        D_Mat = D.matrix
+        if problem_type == 'adjoint':
+            D_Mat = D.adjoint_matrix
+
+        nlinA = A - D_Mat
+        E = pep_solver(nlinA, B, C, target, nev, print_results=print_results)
+        eig = E.getEigenpair(i, vr, vi)
+        f[k] = eig
+
+        if k != 0:
+            alpha[k] = 1 / (1 - ((f[k] - f[k-1]) / (omega[k] - omega[k-1])))
+
+        omega[k+1] = alpha[k] * f[k] + (1 - alpha[k]) * omega[k]
+
+        domega = omega[k+1] - omega[k]
+        if MPI.COMM_WORLD.rank == 0:
+            print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
+                k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
+            ))
+
+    return E

@@ -32,7 +32,7 @@ boundary_conditions = {4: {'Neumann'},
                        2: {'Neumann'},
                        1: {'Robin': params.Y_in}}
 
-degree = 2
+degree = 1
 
 x_f = params.x_f
 x_r = params.x_r

@@ -25,7 +25,7 @@ boundary_conditions = {1: {'Robin': params.Y_in},  # inlet
                        3: {'Neumann'}}             # wall
 
 
-degree = 2
+degree = 1
 
 x_f = params.x_f
 x_r = params.x_r
