@@ -48,6 +48,7 @@ def eps_solver(A, C, target, nev, two_sided=False, print_results=False):
     # spectral transformation
     st = E.getST()
     st.setType('sinvert')
+    E.setKrylovSchurPartitions(1) # MPI.COMM_WORLD.Get_size()
 
     E.setTarget(target)
     E.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_MAGNITUDE)  # TARGET_REAL or TARGET_IMAGINARY
@@ -57,10 +58,12 @@ def eps_solver(A, C, target, nev, two_sided=False, print_results=False):
     E.setDimensions(nev, SLEPc.DECIDE)
     E.setTolerances(1e-15)
     E.setFromOptions()
-
+    if MPI.COMM_WORLD.rank == 0:
+        print("- EPS solver started.")
     E.solve()
-
-    if print_results:
+    if MPI.COMM_WORLD.rank == 0:
+            print("- EPS solver converged. Eigenvalue computed.")
+    if print_results and MPI.COMM_WORLD.rank == 0:
         results(E)
 
     return E
@@ -79,7 +82,7 @@ def pep_solver(A, B, C, target, nev, print_results=False):
     C : petsc4py.PETSc.Mat
         Matrix of w^2 term.
     target : float
-        targeted nondimensional eigenvalue
+        targeted eigenvalue
     nev : int
         Requested number of eigenvalue
     print_results : boolean, optional
@@ -91,6 +94,7 @@ def pep_solver(A, B, C, target, nev, print_results=False):
         Solution instance of eigenvalue problem.
 
     """
+
 
     Q = SLEPc.PEP().create(MPI.COMM_WORLD)
 
@@ -110,17 +114,25 @@ def pep_solver(A, B, C, target, nev, print_results=False):
     Q.setTolerances(1e-15)
     Q.setFromOptions()
 
+    if MPI.COMM_WORLD.rank == 0:
+            print("- PEP solver started.")
+
     Q.solve()
 
-    if print_results:
+    if MPI.COMM_WORLD.rank == 0:
+            print("- PEP solver converged. Eigenvalue computed.")
+
+    if print_results and MPI.COMM_WORLD.rank == 0:
         results(Q)
     return Q
     
 
-def fixed_point_iteration_pep(operators, D, target, nev=2, i=0,
-                              tol=1e-8, maxiter=50,
-                              print_results=False,
-                              problem_type='direct'):
+def fixed_point_iteration_pep( operators, D,  target, nev=2, i=0,
+                                    tol=1e-8, maxiter=50,
+                                    print_results=False,
+                                    problem_type='direct'):
+    
+
 
     A = operators.A
     C = operators.C
@@ -131,11 +143,9 @@ def fixed_point_iteration_pep(operators, D, target, nev=2, i=0,
     omega = np.zeros(maxiter, dtype=complex)
     f = np.zeros(maxiter, dtype=complex)
     alpha = np.zeros(maxiter, dtype=complex)
-
     E = pep_solver(A, B, C, target, nev, print_results=print_results)
     vr, vi = A.getVecs()
     eig = E.getEigenpair(i, vr, vi)
-
     omega[0] = eig
     alpha[0] = .5
 
@@ -146,11 +156,15 @@ def fixed_point_iteration_pep(operators, D, target, nev=2, i=0,
     s = "{:.0e}".format(tol)
     s = int(s[-2:])
     s = "{{:+.{}f}}".format(s)
+    
+    if MPI.COMM_WORLD.rank == 0:
+        print("-> Fixed point iteration started.\n")
 
     while abs(domega) > tol:
 
         k += 1
-
+        if MPI.COMM_WORLD.rank == 0:
+            print("* iter = {:2d}".format(k+1))
         D.assemble_matrix(omega[k], problem_type)
         D_Mat = D.matrix
         if problem_type == 'adjoint':
@@ -159,8 +173,8 @@ def fixed_point_iteration_pep(operators, D, target, nev=2, i=0,
         nlinA = A - D_Mat
 
         E = pep_solver(nlinA, B, C, target, nev, print_results=print_results)
+        
         eig = E.getEigenpair(i, vr, vi)
-
         f[k] = eig
 
         if k != 0:
@@ -170,8 +184,8 @@ def fixed_point_iteration_pep(operators, D, target, nev=2, i=0,
 
         domega = omega[k+1] - omega[k]
         if MPI.COMM_WORLD.rank == 0:
-            print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
-                k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
+            print('+ omega = {}  {}j,  |domega| = {:.2e}\n'.format(
+                 s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
             ))
 
     return E
@@ -192,6 +206,9 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
     f = np.zeros(maxiter, dtype=complex)
     alpha = np.zeros(maxiter, dtype=complex)
 
+    if MPI.COMM_WORLD.rank == 0:
+        print("--> Fixed point iteration started.\n")
+
     E = eps_solver(A, C, target, nev, print_results=print_results)
     eig = E.getEigenvalue(i)
 
@@ -206,9 +223,15 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
     s = int(s[-2:])
     s = "{{:+.{}f}}".format(s)
 
+    if MPI.COMM_WORLD.rank == 0:
+        print("-> Starting eigenvalue is found: {}  {}j. ".format(
+                 s.format(omega[k + 1].real), s.format(omega[k + 1].imag)))
+        print("-> Iterations are starting.\n ")
     while abs(domega) > tol:
 
         k += 1
+        if MPI.COMM_WORLD.rank == 0:
+            print("* iter = {:2d}".format(k+1))
 
         D.assemble_matrix(omega[k], problem_type)
         D_Mat = D.matrix
@@ -232,8 +255,8 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
 
         domega = omega[k+1] - omega[k]
         if MPI.COMM_WORLD.rank == 0:
-            print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
-                k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
+            print('+ omega = {}  {}j,  |domega| = {:.2e}\n'.format(
+                 s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
             ))
 
     return E
@@ -448,3 +471,6 @@ def fixed_point_iteration_ntau_new( operators, target, mesh, subdomains,
             ))
 
     return E
+
+
+

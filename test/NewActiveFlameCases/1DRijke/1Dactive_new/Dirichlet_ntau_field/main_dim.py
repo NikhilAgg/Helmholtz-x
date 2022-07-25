@@ -16,7 +16,7 @@ import params_dim
 # approximation space polynomial degree
 degree = 1
 # number of elements in each direction of mesh
-n_elem = 400
+n_elem = 1000
 mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
 V = FunctionSpace(mesh, ("Lagrange", degree))
 
@@ -54,9 +54,9 @@ boundary_conditions = {1: {'Dirichlet'},  # inlet
 
 # Define Speed of sound
 
-c = params_dim.c(mesh)
+# c = params_dim.c(mesh)
 from petsc4py import PETSc
-# c = Constant(mesh, PETSc.ScalarType(343))
+c = Constant(mesh, PETSc.ScalarType(400))
 # Introduce Passive Flame Matrices
 
 matrices = PassiveFlame(mesh, facet_tag, boundary_conditions, c, degree=degree)
@@ -74,11 +74,11 @@ C = matrices.C
 x_f = params_dim.x_f
 x_r = params_dim.x_r
 
-n = params_dim.n(mesh, params_dim.x_f)
-tau = params_dim.tau(mesh, params_dim.x_f)
+n = params_dim.n(mesh, x_f[0][0])
+tau = params_dim.tau(mesh, x_f[0][0])
 
-rho = params_dim.rho(mesh, params_dim.x_f)
-w = params_dim.w(mesh, params_dim.x_r[0][0])
+rho = params_dim.rho(mesh, x_f[0][0])
+w = params_dim.w(mesh, x_r[0][0])
 
 target = 200 * 2 * np.pi # 150 * 2 * np.pi
 

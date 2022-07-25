@@ -1,3 +1,7 @@
+import datetime
+start_time = datetime.datetime.now()
+
+
 import dolfinx
 import numpy as np
 from mpi4py import MPI
@@ -8,17 +12,12 @@ from helmholtz_x.helmholtz_pkgx.flame_transfer_function_x import n_tau
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import fixed_point_iteration_pep
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
-from helmholtz_x.geometry_pkgx.xdmf_utils import load_xdmf_mesh, write_xdmf_mesh
+from helmholtz_x.geometry_pkgx.xdmf_utils import XDMFReader
 
-# Generate mesh
-from rijke_geom import geom_pipe
-if MPI.COMM_WORLD.rank == 0:
-    geom_pipe(fltk=False)
-
-write_xdmf_mesh("MeshDir/rijke",dimension=3)
 # Read mesh 
-
-mesh, subdomains, facet_tags = load_xdmf_mesh("MeshDir/rijke")
+rijke3d = XDMFReader("MeshDir/rijke")
+mesh, subdomains, facet_tags = rijke3d.getAll()
+rijke3d.getNumberofCells()
 
 # Define the boundary conditions
 import params
@@ -57,6 +56,8 @@ D.assemble_submatrices()
 E = fixed_point_iteration_pep(matrices, D, np.pi, nev=2, i=0, print_results= False)
 
 omega, p = normalize_eigenvector(mesh, E, 0, degree=1, which='right')
+
+
 print(omega)
 
 import dolfinx.io
@@ -65,3 +66,6 @@ with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "p.xdmf", "w") as xdmf:
     p.vector.ghostUpdate(addv=PETSc.InsertMode.INSERT, mode=PETSc.ScatterMode.FORWARD)
     xdmf.write_mesh(mesh)
     xdmf.write_function(p)
+    
+if MPI.COMM_WORLD.rank == 0:
+    print("Total Execution Time: ", datetime.datetime.now()-start_time)

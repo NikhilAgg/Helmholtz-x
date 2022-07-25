@@ -44,16 +44,19 @@ Y_out = 1/Z_out
 Q_tot = 200.  # [W]
 U_bulk = 0.1  # [m/s]
 # N = 0.014  # [/]
+n_value = 1
 
-tau_u = 0.
+tau_u = 0.0
 tau_d = 0.001
 
-x_f = np.array([[0.25, 0., 0.]])  # [m]
+shifter = 0.0
+
+x_f = np.array([[0.25+shifter, 0., 0.]])  # [m]
 a_f = 0.025  # [m]
 
-x_r = np.array([[0.20, 0., 0.]])  # [m]
+x_r = np.array([[0.20+shifter, 0., 0.]])  # [m]
 a_r = 0.0047
-a_n = 0.025
+
 # ------------------------------------------------------------
 
 def gaussian(x,x_ref,sigma):
@@ -65,14 +68,11 @@ def w(mesh, x_r):
     V = FunctionSpace(mesh, ("CG", 1))
     w = Function(V)
     x = V.tabulate_dof_coordinates()
-
-    # global x_r
-    # global a_r
     w.interpolate(lambda x: gaussian(x,x_r,a_r))
     return w
     
-def density(x, x_f, sigma, tau_d, tau_u):
-    return tau_u + (tau_d-tau_u)/2*(1+np.tanh((x[0]-x_f)/(sigma)))
+def density(x, x_f, sigma, rho_d, rho_u):
+    return rho_u + (rho_d-rho_u)/2*(1+np.tanh((x[0]-x_f)/(sigma)))
 
 def rho(mesh, x_f):
 
@@ -87,25 +87,37 @@ def n(mesh, x_f):
     V = FunctionSpace(mesh, ("CG", 1))
     n = Function(V)
     x = V.tabulate_dof_coordinates()   
-    
-    n.interpolate(lambda x: gaussian(x,x_f,a_n))
+
+    for i in range(x.shape[0]):
+        midpoint = x[i,:]
+        if midpoint[0] > x_f-a_f and midpoint[0]< x_f+a_f :
+            n.vector.setValueLocal(i, n_value)
+        else:
+            n.vector.setValueLocal(i, 0.)
     return n
 
 def tau(mesh, x_f):
     V = FunctionSpace(mesh, ("CG", 1))
     tau = Function(V)
     x = V.tabulate_dof_coordinates()   
-
-    tau.interpolate(lambda x: density(x, x_f, a_f, tau_d, tau_u))
+    for i in range(x.shape[0]):
+        midpoint = x[i,:]
+        
+        if midpoint[0] < x_f-a_f:
+            tau.vector.setValueLocal(i, tau_u)
+        elif midpoint[0] > x_f-a_f and midpoint[0]< x_f+a_f :
+            tau.vector.setValueLocal(i, tau_u+(tau_d-tau_u)/(2*a_f)*(midpoint[0]-(x_f-a_f)))
+        else:
+            tau.vector.setValueLocal(i, tau_d)
     return tau
 
 def c(mesh):
     V = FunctionSpace(mesh, ("DG", 0))
     c = Function(V)
     x = V.tabulate_dof_coordinates()
-    global c_in
-    global c_out
-    global x_f
+    # global c_in
+    # global c_out
+    # global x_f
     x_f = x_f[0][0]
     for i in range(x.shape[0]):
         midpoint = x[i,:]
@@ -126,21 +138,18 @@ if __name__ == '__main__':
     w_plot = w(mesh,x_r[0][0])
     plt.plot(mesh.geometry.x, w_plot.x.array.real)
     plt.savefig("gaussian.pdf")
-    plt.close()
-
-    n_plot = n(mesh,x_f[0][0])
-    plt.plot(mesh.geometry.x, n_plot.x.array.real)
-    plt.ylabel(r'$n$')
-    plt.savefig("n.pdf")
-    plt.close()
+    plt.clf()
 
     rho_plot = rho(mesh,x_f[0][0])
     plt.plot(mesh.geometry.x, rho_plot.x.array.real)
     plt.savefig("rho.pdf")
-    plt.close()
+    plt.clf()
+    
+    n_plot = n(mesh,x_f[0][0])
+    plt.plot(mesh.geometry.x, n_plot.x.array.real)
+    plt.savefig("n.pdf")
+    plt.clf()
 
     tau_plot = tau(mesh,x_f[0][0])
     plt.plot(mesh.geometry.x, tau_plot.x.array.real)
-    plt.ylabel(r'$tau$')
     plt.savefig("tau.pdf")
-    plt.close()

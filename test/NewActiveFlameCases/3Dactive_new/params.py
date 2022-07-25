@@ -42,11 +42,11 @@ Y_out = 1/Z_out
 
 Q_tot = 200.  # [W]
 U_bulk = 0.1  # [m/s]
-N = 0.014  # [/]
 
-n = N*Q_tot/U_bulk  # [J/m]
+n_value = 1  # [J/m]
 
-tau = 0.0015  # [s]
+tau_u = 0.000
+tau_d = 0.001  # [s]
 
 
 x_f = np.array([[0., 0., 0.25]])  # [m]
@@ -84,6 +84,34 @@ def rho(mesh, x_f):
     return rho
 
 
+def n(mesh, x_f):
+    V = FunctionSpace(mesh, ("CG", 1))
+    n = Function(V)
+    x = V.tabulate_dof_coordinates()   
+
+    for i in range(x.shape[0]):
+        midpoint = x[i,:]
+        if midpoint[2] >= x_f-a_f and midpoint[2]<= x_f+a_f :
+            n.vector.setValueLocal(i, n_value)
+        else:
+            n.vector.setValueLocal(i, 0.)
+    return n
+
+def tau(mesh, x_f):
+    V = FunctionSpace(mesh, ("CG", 1))
+    tau = Function(V)
+    x = V.tabulate_dof_coordinates()   
+    for i in range(x.shape[0]):
+        midpoint = x[i,:]
+        
+        if midpoint[2] < x_f-a_f:
+            tau.vector.setValueLocal(i, tau_u)
+        elif midpoint[2] >= x_f-a_f and midpoint[2]<= x_f+a_f :
+            tau.vector.setValueLocal(i, tau_u+(tau_d-tau_u)/(2*a_f)*(midpoint[2]-(x_f-a_f)))
+        else:
+            tau.vector.setValueLocal(i, tau_d)
+    return tau
+
 from dolfinx.fem import Function,FunctionSpace
 
 def c(mesh, x_f):
@@ -110,6 +138,9 @@ if __name__ == '__main__':
     rho_func = rho(mesh, x_f[0][2])
     w_func = w(mesh, x_r[0][2])
     c_func = c(mesh, x_f[0][2])
+    n_func = n(mesh, x_f[0][2])
+    tau_func = tau(mesh, x_f[0][2])
+    
     with XDMFFile(MPI.COMM_WORLD, "Results/rho.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
         xdmf.write_mesh(mesh)
         xdmf.write_function(rho_func)
@@ -121,3 +152,11 @@ if __name__ == '__main__':
     with XDMFFile(MPI.COMM_WORLD, "Results/c.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
         xdmf.write_mesh(mesh)
         xdmf.write_function(c_func)
+        
+    with XDMFFile(MPI.COMM_WORLD, "Results/n.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
+        xdmf.write_mesh(mesh)
+        xdmf.write_function(n_func)
+    
+    with XDMFFile(MPI.COMM_WORLD, "Results/tau.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
+        xdmf.write_mesh(mesh)
+        xdmf.write_function(tau_func)

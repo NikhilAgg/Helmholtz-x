@@ -1,7 +1,10 @@
+import datetime
+start_time = datetime.datetime.now()
+
 import dolfinx
-from dolfinx.fem import Function, FunctionSpace, Constant, form
+from dolfinx.fem import Function, FunctionSpace, Constant, form, assemble_scalar
 from dolfinx.mesh import create_unit_square
-from dolfinx.fem.assemble import assemble_matrix,assemble_scalar
+from dolfinx.fem.petsc import assemble_matrix
 from mpi4py import MPI
 from ufl import Measure,  TestFunction, TrialFunction, dx, grad, inner,ds
 from petsc4py import PETSc
@@ -9,7 +12,7 @@ import numpy as np
 from slepc4py import SLEPc
 
 
-mesh = create_unit_square(MPI.COMM_WORLD, 8, 8)
+mesh = create_unit_square(MPI.COMM_WORLD, 750, 750)
 dx = Measure("dx",domain=mesh)
 
 V = FunctionSpace(mesh, ("Lagrange", 1))
@@ -29,6 +32,8 @@ solver = SLEPc.EPS().create(MPI.COMM_WORLD)
 C = - C
 
 solver.setOperators(A, C)
+st = solver.getST()
+st.setType('sinvert')
 solver.setFromOptions()
 solver.solve()
 
@@ -48,3 +53,6 @@ p.name = "Acoustic_Wave"
 with dolfinx.io.XDMFFile(MPI.COMM_WORLD, "p.xdmf", "w") as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p)
+
+if MPI.COMM_WORLD.rank == 0:
+    print("Total Execution Time: ", datetime.datetime.now()-start_time)

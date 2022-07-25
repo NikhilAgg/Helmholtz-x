@@ -31,7 +31,7 @@ def add_elementary_entities():
 
     
     R = 0.047/2
-    lc = 8e-3
+    lc = 3e-3
     
     L_flame_start = 0.225
     L_flame_end   = 0.275
@@ -215,4 +215,6 @@ def fltk_options():
 
 if __name__ == '__main__':
 
-    geom_pipe(fltk=True)
+    geom_pipe(fltk=False)
+    from helmholtz_x.geometry_pkgx.xdmf_utils import write_xdmf_mesh
+    write_xdmf_mesh("MeshDir/rijke",dimension=3)

@@ -94,8 +94,8 @@ class XDMFReader:
         num_cells = t_imap.size_local + t_imap.num_ghosts
         total_num_cells = comm.allreduce(num_cells, op=MPI.SUM) #sum all cells and distribute to each process
         if rank==0:
-            print("Number of cells: {:,}".format(total_num_cells))
-            print("Number of cores: ", size)
+            print("Number of cells:  {:,}".format(total_num_cells))
+            print("Number of cores: ", size, "\n")
         return total_num_cells
         
 
