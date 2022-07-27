@@ -74,7 +74,8 @@ C = matrices.C
 x_f = params_dim.x_f
 x_r = params_dim.x_r
 
-n = params_dim.n(mesh, x_f[0][0])
+# n = params_dim.n(mesh, x_f[0][0])
+n = params_dim.n_1D
 tau = params_dim.tau(mesh, x_f[0][0])
 
 rho = params_dim.rho(mesh, x_f[0][0])
@@ -84,7 +85,7 @@ w = params_dim.w(mesh, x_r[0][0])
 
 target = 200 * 2 * np.pi # 150 * 2 * np.pi
 
-D = ActiveFlameNT1(mesh, subdomains, w, h, rho, params_dim.Q_tot, params_dim.U_bulk, n, tau,  x_r, 
+D = ActiveFlameNT1(mesh, subdomains, w, h, rho, params_dim.Q_tot, params_dim.U_bulk, n, tau,  
                     degree=degree)
 
 E = fixed_point_iteration_pep(matrices, D, target, nev=2, i=0, print_results= False)

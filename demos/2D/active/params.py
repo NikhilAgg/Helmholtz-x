@@ -84,7 +84,7 @@ N = 0.014  # [/]
 
 n_dim = N*Q_tot/U_bulk  # [J/m]
 
-n_dim /= pi/4 * 0.047
+n_dim /=  pi/4 * 0.047
 
 """[n_dim is case dependent]
 

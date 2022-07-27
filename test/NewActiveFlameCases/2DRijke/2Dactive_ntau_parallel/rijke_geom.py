@@ -7,7 +7,7 @@ def geom_rectangle(file="MeshDir/rijke", fltk=True):
     gmsh.option.setNumber("General.Terminal", 1)
     gmsh.model.add(__name__)
 
-    lc = 8e-4
+    lc = 3e-3
 
     L = 1
     h = 0.047/2

@@ -1,12 +1,10 @@
-import dolfinx
-from dolfinx.fem  import Function, FunctionSpace, Constant, form
+from dolfinx.fem  import Function, FunctionSpace, Constant, form, assemble_scalar
 from dolfinx.fem.petsc import assemble_vector
 from mpi4py import MPI
-from ufl import Measure, FacetNormal, TestFunction, TrialFunction, inner, as_vector, grad
+from ufl import Measure, TestFunction, TrialFunction, inner, as_vector, grad
 import ufl
 from petsc4py import PETSc
 import numpy as np
-from math import ceil
 
 class ActiveFlame:
 
@@ -24,7 +22,7 @@ class ActiveFlame:
         self.FTF = FTF
         self.degree = degree
         self.bloch_object = bloch_object
-        
+
 
         self.coeff = (self.gamma - 1) * Q / U
 
@@ -83,7 +81,7 @@ class ActiveFlame:
         V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(volume_form), op=MPI.SUM)
         b = Function(self.V)
         b.x.array[:] = 0
-        const = Constant(self.mesh, (PETSc.ScalarType(1))) 
+        const = Constant(self.mesh, (PETSc.ScalarType(1)))
         gradient_form = form(inner(const, phi_k)*dx)
         a = assemble_vector(b.vector, gradient_form)
         # print(a.array)
@@ -96,9 +94,9 @@ class ActiveFlame:
         # a = list(zip(global_indices, a[indices1]))
         a = list(map(list, zip(global_indices, a[indices1])))
 
-        # # New method - Parallelization        
+        # # New method - Parallelization
         # a = self.comm.gather(a, root=0)
-        
+
         # if self.rank == 0:
         #     a = [j for i in a for j in i]
         #     print("Before chunking: \n",a)
@@ -108,13 +106,13 @@ class ActiveFlame:
         #     for i, chunk in enumerate(a):
         #         chunks[i % self.size].append(chunk)
         # else:
-        #     a = None 
-        #     chunks = None          
+        #     a = None
+        #     chunks = None
         # a = self.comm.scatter(chunks, root=0)
         # print ("process", self.rank, "a_local:", a)
         # return a
 
-        # Parallelization        
+        # Parallelization
         a = self.comm.gather(a, root=0)
         if a:
             a = [j for i in a for j in i]
@@ -126,7 +124,7 @@ class ActiveFlame:
 
         return a
 
-        # Parallelization        
+        # Parallelization
         a = self.comm.gather(a, root=0)
         if a:
             a = [j for i in a for j in i]
@@ -136,7 +134,7 @@ class ActiveFlame:
         print("A", a, "Process", self.rank)
 
         return a
-        
+
 
     def _assemble_right_vector(self, point):
 
@@ -147,7 +145,7 @@ class ActiveFlame:
             n = as_vector([1,0])
         else:
             n = as_vector([0,0,1])
-        
+
         b = Function(self.V)
         b.x.array[:] = 0
         form_to_assemble = form(inner(n,grad(self.v)*self.w/self.rho)*ufl.dx)
@@ -164,9 +162,9 @@ class ActiveFlame:
         global_indices = dofmaps.index_map.local_to_global(indices2)
         right_vector = list(zip(global_indices, right_vector[indices2]))
 
-        # New method - Parallelization        
+        # New method - Parallelization
         right_vector = self.comm.gather(right_vector, root=0)
-        
+
         if self.rank == 0:
             right_vector = [j for i in right_vector for j in i]
             # print("Before chunking of B: \n",right_vector)
@@ -175,8 +173,8 @@ class ActiveFlame:
             for i, chunk in enumerate(right_vector):
                 chunks[i % self.size].append(chunk)
         else:
-            right_vector = None 
-            chunks = None          
+            right_vector = None
+            chunks = None
         right_vector = self.comm.scatter(chunks, root=0)
         return right_vector
 
@@ -191,7 +189,7 @@ class ActiveFlame:
         return right_vector
 
     def assemble_submatrices(self, problem_type='direct'):
-        
+
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
 
@@ -202,7 +200,7 @@ class ActiveFlame:
         elif problem_type == 'adjoint':
             A = self._b[str(0)]
             B = self._a[str(0)]
-        
+
         # print("A_local", A, "Process: ", self.rank)
         # print("B_local", B, "Process:", self.rank)
 
@@ -210,22 +208,22 @@ class ActiveFlame:
         # print(A,B)
         row = [item[0] for item in A]
         col = [item[0] for item in B]
-        
+
         row_vals = [item[1] for item in A]
         col_vals = [item[1] for item in B]
 
-        product = np.outer(row_vals,col_vals) 
+        product = np.outer(row_vals,col_vals)
         # print(product,"process", self.rank)
 
         # print("ROWS: ", len(row), self.rank)
         # print("COLS: ", col, self.rank)
 
         val = product.flatten()
-        mat = PETSc.Mat().create(PETSc.COMM_WORLD) 
+        mat = PETSc.Mat().create(PETSc.COMM_WORLD)
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('mpiaij')
         NNZ = len(row)
-        NNZ1 = 1*len(row)*np.ones(local_size,dtype=np.int32) 
+        NNZ1 = 1*len(row)*np.ones(local_size,dtype=np.int32)
         mat.setPreallocationNNZ([NNZ,NNZ])
         mat.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
         mat.setUp()
@@ -294,7 +292,7 @@ class ActiveFlameNT:
         self.tau = tau
         self.omega = omega
         self.degree = degree
-        
+
 
         self.coeff = (self.gamma - 1) * Q / U
 
@@ -356,28 +354,28 @@ class ActiveFlameNT:
 
         int_n = dolfinx.fem.assemble_scalar(form(self.n*ufl.dx))
         # print("Integration of n", int_n )
-        const = Constant(self.mesh, (PETSc.ScalarType(1/V_fl))) 
-        # const = Constant(self.mesh, (PETSc.ScalarType(1))) 
+        const = Constant(self.mesh, (PETSc.ScalarType(1/V_fl)))
+        # const = Constant(self.mesh, (PETSc.ScalarType(1)))
 
 
         n = self.n
-        tau = self.tau 
+        tau = self.tau
         tau_func = Function(FunctionSpace(self.mesh, ("Lagrange", self.degree)))
-        tau_func.x.array[:] = np.exp(self.omega*1j*tau.x.array) 
+        tau_func.x.array[:] = np.exp(self.omega*1j*tau.x.array)
         tau_func.x.scatter_forward()
 
-        gradient_form = form(n * tau_func  * inner(const, phi_k) * ufl.dx)  
-        # gradient_form = form(n * tau_func * inner(const, phi_k) * ufl.dx)        
-      
+        gradient_form = form(n * tau_func  * inner(const, phi_k) * ufl.dx)
+        # gradient_form = form(n * tau_func * inner(const, phi_k) * ufl.dx)
+
         a = assemble_vector(b.vector, gradient_form)
         b.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
         indices1 = np.array(np.flatnonzero(a.array),dtype=np.int32)
         a = b.x.array
         dofmaps = self.V.dofmap
         global_indices = dofmaps.index_map.local_to_global(indices1)
-        a = list(map(list, zip(global_indices, a[indices1]))) 
+        a = list(map(list, zip(global_indices, a[indices1])))
 
-        # Parallelization        
+        # Parallelization
         a = self.comm.gather(a, root=0)
         if a:
             a = [j for i in a for j in i]
@@ -397,7 +395,7 @@ class ActiveFlameNT:
             n = as_vector([1,0])
         else:
             n = as_vector([0,0,1])
-        
+
         b = Function(self.V)
         b.x.array[:] = 0
         form_to_assemble = form(inner(n,grad(self.v)/self.rho*self.w)*ufl.dx)
@@ -414,9 +412,9 @@ class ActiveFlameNT:
         global_indices = dofmaps.index_map.local_to_global(indices2)
         right_vector = list(zip(global_indices, right_vector[indices2]))
 
-        # New method - Parallelization        
+        # New method - Parallelization
         right_vector = self.comm.gather(right_vector, root=0)
-        
+
         if self.rank == 0:
             right_vector = [j for i in right_vector for j in i]
             # print("Before chunking of B: \n",right_vector)
@@ -425,13 +423,13 @@ class ActiveFlameNT:
             for i, chunk in enumerate(right_vector):
                 chunks[i % self.size].append(chunk)
         else:
-            right_vector = None 
-            chunks = None          
+            right_vector = None
+            chunks = None
         right_vector = self.comm.scatter(chunks, root=0)
         return right_vector
 
     def assemble_submatrices(self, problem_type='direct'):
-        
+
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
 
@@ -445,14 +443,14 @@ class ActiveFlameNT:
 
         row = [item[0] for item in A]
         col = [item[0] for item in B]
-        
+
         row_vals = [item[1] for item in A]
         col_vals = [item[1] for item in B]
 
-        product = np.outer(row_vals,col_vals) 
+        product = np.outer(row_vals,col_vals)
 
         val = product.flatten()
-        mat = PETSc.Mat().create(PETSc.COMM_WORLD) 
+        mat = PETSc.Mat().create(PETSc.COMM_WORLD)
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('mpiaij')
         NNZ = len(row)
@@ -470,16 +468,189 @@ class ActiveFlameNT:
 
 class ActiveFlameNT1:
 
-    gamma = 1.4
-
-    def __init__(self, mesh, subdomains, w, h, rho, Q, U, n, tau, x_r, degree=1):
+    def __init__(self, mesh, subdomains, w, h, rho, Q_tot, U_bulk, n, tau, degree=1):
 
         self.mesh = mesh
         self.subdomains = subdomains
         self.w = w
         self.h = h
         self.rho = rho
-        self.x_r = x_r
+        self.U_bulk = U_bulk
+        self.Q_tot = Q_tot
+        self.n = n
+        self.tau = tau
+        self.degree = degree
+        self.gamma = 1.4
+
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size()
+        self.tol = 1e-5
+        self.omega = 0
+
+        self._a = None
+        self._b = None
+        self._D_kj = None
+        self._D_kj_adj = None
+        self._D = None
+        self._D_adj = None
+
+        self.V = FunctionSpace(mesh, ("Lagrange", degree))
+        self.dofmaps = self.V.dofmap
+        self.dimension = self.mesh.topology.dim
+
+
+        self.phi_i = TrialFunction(self.V)
+        self.phi_j = TestFunction(self.V)
+
+        self.dx = Measure("dx", subdomain_data=self.subdomains)
+
+        self._a = self._assemble_left_vector()
+        self._b = self._assemble_right_vector()
+
+    @property
+    def submatrices(self):
+        return self._D_kj
+    @property
+    def adjoint_submatrices(self):
+        return self._D_kj_adj
+    @property
+    def matrix(self):
+        return self._D
+    @property
+    def adjoint_matrix(self):
+        return self._D_adj
+    @property
+    def a(self):
+        return self._a
+    @property
+    def b(self):
+        return self._b
+
+    def _indices_and_values(self, form):
+
+        temp = Function(self.V)
+
+        assemble_vector(temp.vector, form)
+        temp.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
+        packed = temp.x.array
+        packed.real[abs(packed.real) < self.tol] = 0.0
+        packed.imag[abs(packed.imag) < self.tol] = 0.0
+
+        indices = np.array(np.flatnonzero(packed),dtype=np.int32)
+        global_indices = self.dofmaps.index_map.local_to_global(indices)
+        packed = list(zip(global_indices, packed[indices]))
+
+        return packed
+
+    def _assemble_left_vector(self):
+
+        volume_form = form(Constant(self.mesh, PETSc.ScalarType(1))*self.dx)
+        V_domain = MPI.COMM_WORLD.allreduce(assemble_scalar(volume_form), op=MPI.SUM)
+        q_tot = Constant(self.mesh, (PETSc.ScalarType(self.Q_tot/V_domain)))
+
+        coefficient = (self.gamma - 1) * q_tot / self.U_bulk
+
+        exp_tau = Function(self.V)
+        exp_tau.x.array[:] = np.exp( 1j*self.omega*self.tau.x.array)
+        exp_tau.x.scatter_forward()
+
+        n = Constant(self.mesh, (PETSc.ScalarType(self.n)))
+
+        form_to_assemble = form(coefficient *  self.phi_i * self.h * n * exp_tau  *  self.dx)
+
+        left_vector = self._indices_and_values(form_to_assemble)
+
+        # Parallelization
+        left_vector = self.comm.gather(left_vector, root=0)
+        if left_vector:
+            left_vector = [j for i in left_vector for j in i]
+        else:
+            left_vector=[]
+        left_vector = self.comm.bcast(left_vector,root=0)
+
+        return left_vector
+
+    def _assemble_right_vector(self):
+
+        if self.dimension == 1:
+            n_ref = as_vector([1])
+        elif self.dimension == 2:
+            n_ref = as_vector([1,0])
+        else:
+            n_ref = as_vector([0,0,1])
+
+        gradient_form = form(inner(n_ref,grad(self.phi_j) / self.rho * self.w) * self.dx)
+
+        right_vector = self._indices_and_values(gradient_form)
+
+        # Parallelization
+        right_vector = self.comm.gather(right_vector, root=0)
+
+        if self.rank == 0:
+            right_vector = [j for i in right_vector for j in i]
+            chunks = [[] for _ in range(self.size)]
+            for i, chunk in enumerate(right_vector):
+                chunks[i % self.size].append(chunk)
+        else:
+            right_vector = None
+            chunks = None
+        right_vector = self.comm.scatter(chunks, root=0)
+        return right_vector
+
+    def assemble_submatrices(self, problem_type='direct'):
+
+        if problem_type == 'direct':
+            A = self._a
+            B = self._b
+
+        elif problem_type == 'adjoint':
+            A = self._b
+            B = self._a
+
+        row = [item[0] for item in A]
+        col = [item[0] for item in B]
+
+        row_vals = [item[1] for item in A]
+        col_vals = [item[1] for item in B]
+
+        product = np.outer(row_vals,col_vals)
+        val = product.flatten()
+
+        global_size = self.V.dofmap.index_map.size_global
+        local_size = self.V.dofmap.index_map.size_local
+
+        mat = PETSc.Mat().create(PETSc.COMM_WORLD)
+        mat.setSizes([(local_size, global_size), (local_size, global_size)])
+        mat.setType('mpiaij')
+        NNZ = len(row)
+        mat.setPreallocationNNZ([NNZ,NNZ])
+        mat.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
+        mat.setUp()
+        mat.setValues(row, col, val, addv=PETSc.InsertMode.ADD_VALUES)
+        mat.assemblyBegin()
+        mat.assemblyEnd()
+
+        self._D = mat
+
+    def assemble_matrix(self, omega, problem_type='direct'):
+        self.omega = omega
+        self._a = self._assemble_left_vector()
+        self.assemble_submatrices(problem_type)
+        if self.rank==0:
+            print("- Matrix D is assembled.")
+
+class ActiveFlameNT2:
+
+    gamma = 1.4
+
+    def __init__(self, mesh, subdomains, w, h, rho, Q, U, n, tau, degree=1):
+
+        self.mesh = mesh
+        self.subdomains = subdomains
+        self.w = w
+        self.h = h
+        self.rho = rho
         self.U = U
         self.Q = Q
         self.n = n
@@ -515,7 +686,7 @@ class ActiveFlameNT1:
         self.flame_tag = 0
 
         self._a[str(self.flame_tag)] = self._assemble_left_vector()
-        self._b[str(self.flame_tag)] = self._assemble_right_vector(x_r)
+        self._b[str(self.flame_tag)] = self._assemble_right_vector()
 
     @property
     def submatrices(self):
@@ -535,20 +706,16 @@ class ActiveFlameNT1:
     @property
     def b(self):
         return self._b
-    
+
     def _indices_and_values(self, form):
 
         temp = Function(self.V)
-        # temp.x.array[:] = 0
-        # temp.x.scatter_forward() 
-        
+
         assemble_vector(temp.vector, form)
         temp.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
-        temp.x.scatter_forward()
         packed = temp.x.array
         packed.real[abs(packed.real) < self.tol] = 0.0
         packed.imag[abs(packed.imag) < self.tol] = 0.0
-        
 
         indices = np.array(np.flatnonzero(packed),dtype=np.int32)
         global_indices = self.dofmaps.index_map.local_to_global(indices)
@@ -557,54 +724,62 @@ class ActiveFlameNT1:
         return packed
 
     def _assemble_left_vector(self):
-        
-        volume_form = form(Constant(self.mesh, PETSc.ScalarType(1))*self.dx(self.flame_tag))
-        V_flame = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(volume_form), op=MPI.SUM)
-        q = Constant(self.mesh, (PETSc.ScalarType(self.Q/V_flame))) 
 
-        ntau = Function(self.V)
-        ntau.x.array[:] = np.exp(self.omega*1j*self.tau.x.array) 
-        ntau.x.scatter_forward()
+        from helmholtz_x.helmholtz_pkgx.helmholtz_utils import Q_uniform, n_bump
+        if self.mesh.geometry.dim==1 or self.mesh.geometry.dim==2:
+            x_f = np.array([[0.25, 0., 0.]])  # [m]
+        elif self.mesh.geometry.dim==3:
+            x_f = np.array([[0., 0., 0.25]])  # [m]
+        a_f = 0.025  # [m]
+        q_uniform = Q_uniform(self.mesh, self.subdomains, self.Q)
+        q_tot = n_bump(self.mesh, x_f, a_f, q_uniform.value)
 
-        form_to_assemble = form(q * self.n * self.h * ntau  * self.phi_i *self.dx)  
-        
+        coefficient = (self.gamma - 1) * q_tot / self.U
+        tau = Function(self.V)
+        tau.x.array[:] = np.exp( 1j*self.omega*self.tau.x.array)
+        tau.x.scatter_forward()
+
+        n = Constant(self.mesh, (PETSc.ScalarType(self.n)))
+
+        form_to_assemble = form(coefficient * n * tau  * self.phi_i * self.dx)
+
         left_vector = self._indices_and_values(form_to_assemble)
 
-        # Parallelization        
+        # Parallelization
         left_vector = self.comm.gather(left_vector, root=0)
         if left_vector:
             left_vector = [j for i in left_vector for j in i]
         else:
             left_vector=[]
         left_vector = self.comm.bcast(left_vector,root=0)
-        
+
         return left_vector
 
-    def _assemble_right_vector(self, point):
+    def _assemble_right_vector(self):
 
         tdim = self.mesh.topology.dim
         if tdim==1:
-            n = as_vector([1])
+            n_ref = as_vector([1])
         elif tdim ==2:
-            n = as_vector([1,0])
+            n_ref = as_vector([1,0])
         else:
-            n = as_vector([0,0,1])
-        
-        gradient_form = form(inner(n,grad(self.phi_j) / self.rho * self.w) * self.dx)
+            n_ref = as_vector([0,0,1])
+
+        gradient_form = form(inner(n_ref,grad(self.phi_j) / self.rho * self.w) * self.dx)
 
         right_vector = self._indices_and_values(gradient_form)
 
-        # Parallelization        
+        # Parallelization
         right_vector = self.comm.gather(right_vector, root=0)
-        
+
         if self.rank == 0:
             right_vector = [j for i in right_vector for j in i]
             chunks = [[] for _ in range(self.size)]
             for i, chunk in enumerate(right_vector):
                 chunks[i % self.size].append(chunk)
         else:
-            right_vector = None 
-            chunks = None          
+            right_vector = None
+            chunks = None
         right_vector = self.comm.scatter(chunks, root=0)
         return right_vector
 
@@ -620,17 +795,17 @@ class ActiveFlameNT1:
 
         row = [item[0] for item in A]
         col = [item[0] for item in B]
-        
+
         row_vals = [item[1] for item in A]
         col_vals = [item[1] for item in B]
 
-        product = np.outer(row_vals,col_vals) 
+        product = np.outer(row_vals,col_vals)
         val = product.flatten()
 
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
-        
-        mat = PETSc.Mat().create(PETSc.COMM_WORLD) 
+
+        mat = PETSc.Mat().create(PETSc.COMM_WORLD)
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('mpiaij')
         NNZ = len(row)
@@ -641,7 +816,7 @@ class ActiveFlameNT1:
         mat.assemblyBegin()
         mat.assemblyEnd()
 
-        self._D = mat*self.coeff
+        self._D = mat
 
     def assemble_matrix(self, omega, problem_type='direct'):
         self.omega = omega

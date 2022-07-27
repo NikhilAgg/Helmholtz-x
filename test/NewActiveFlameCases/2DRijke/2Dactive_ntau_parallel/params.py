@@ -9,7 +9,7 @@ out ~ outlet, same as d ~ downstream (of the flame)
 from math import *
 import numpy as np
 from dolfinx.fem import Function,FunctionSpace
-
+from helmholtz_x.helmholtz_pkgx.helmholtz_utils import c_DG, rho,tau_linear,h,w,Q, Q_uniform, n_bump
 
 r = 287.  # [J/kg/K]
 gamma = 1.4  # [/]
@@ -54,6 +54,10 @@ Q_tot = 200.  # [W]
 U_bulk = 0.1  # [m/s]
 n_value = 1
 
+# For 2D dimensional consistency
+d_tube = 0.047
+n_2D = n_value #/((np.pi/4)*d_tube)
+
 tau_u = 0.000
 tau_d = 0.001
 
@@ -63,121 +67,23 @@ a_f = 0.025  # [m]
 x_r = np.array([[0.20, 0., 0.]])  # [m]
 a_r = 0.0047  # [m]
 
-a_v = 0.0125
-
-def gaussian(x,x_ref,sigma):
-    first_term = 1/(sigma*np.sqrt(2*np.pi))
-    second_term = np.exp(-1/2*((x[0]-x_ref)/(sigma))**2)
-    return first_term*second_term
-
-def gaussian2D(x, x_ref, sigma):
-    first_term = 1/((2*np.pi)*sigma**2)
-    second_term = np.exp(((x[0]-x_ref[0][0])**2+(x[1]-x_ref[0][1])**2)/(-2*sigma**2))
-    return first_term*second_term
-
-
-
-def w(mesh, x_r, degree=1):
-    V = FunctionSpace(mesh, ("CG", degree))
-    w = Function(V)
-    x = V.tabulate_dof_coordinates()
-    w.interpolate(lambda x: gaussian(x,x_r,a_r))
-    return w
-
-def w2D(mesh, x_f, degree=1):
-    V = FunctionSpace(mesh, ("CG", degree))
-    w = Function(V)
-    x = V.tabulate_dof_coordinates()
-    w.interpolate(lambda x: gaussian2D(x,x_f,a_f))
-    return w
-
-def h(mesh, x_f, degree=1):
-    V = FunctionSpace(mesh, ("CG", degree))
-    v = Function(V)
-    x = V.tabulate_dof_coordinates()
-    v.interpolate(lambda x: gaussian(x,x_f,a_v))
-    return v
-
-def v2D(mesh, x_f, degree=1):
-    V = FunctionSpace(mesh, ("CG", degree))
-    v = Function(V)
-    x = V.tabulate_dof_coordinates()
-    v.interpolate(lambda x: gaussian2D(x,x_f,a_f))
-    return v
-
-
-
-def density(x, x_f, sigma, rho_d, rho_u):
-    return rho_u + (rho_d-rho_u)/2*(1+np.tanh((x[0]-x_f)/(sigma)))
-
-def rho(mesh, x_f, degree=1):
-
-    V = FunctionSpace(mesh, ("CG", degree))
-    rho = Function(V)
-    x = V.tabulate_dof_coordinates()   
-
-    rho.interpolate(lambda x: density(x, x_f, a_f, rho_d, rho_u))
-    return rho
-
-
-def n(mesh, x_f, degree=1):
-    V = FunctionSpace(mesh, ("CG", degree))
-    n = Function(V)
-    x = V.tabulate_dof_coordinates()   
-
-    for i in range(x.shape[0]):
-        midpoint = x[i,:]
-        if midpoint[0] > x_f-a_f and midpoint[0]< x_f+a_f :
-            n.vector.setValueLocal(i, n_value)
-        else:
-            n.vector.setValueLocal(i, 0.)
-    return n
-
-def tau(mesh, x_f, degree=1):
-    V = FunctionSpace(mesh, ("CG", degree))
-    tau = Function(V)
-    x = V.tabulate_dof_coordinates()   
-    for i in range(x.shape[0]):
-        midpoint = x[i,:]
-        
-        if midpoint[0] < x_f-a_f:
-            tau.vector.setValueLocal(i, tau_u)
-        elif midpoint[0] >= x_f-a_f and midpoint[0]<= x_f+a_f :
-            tau.vector.setValueLocal(i, tau_u+(tau_d-tau_u)/(2*a_f)*(midpoint[0]-(x_f-a_f)))
-        else:
-            tau.vector.setValueLocal(i, tau_d)
-    return tau
-
-def c(mesh, x_f):
-    V = FunctionSpace(mesh, ("DG", 0))
-    c = Function(V)
-    x = V.tabulate_dof_coordinates()
-    for i in range(x.shape[0]):
-        midpoint = x[i,:]
-        if midpoint[0]< x_f:
-            c.vector.setValueLocal(i, c_in)
-        else:
-            c.vector.setValueLocal(i, c_out)
-    return c
+a_h = a_f
 
 if __name__ == '__main__':
     from mpi4py import MPI
     import dolfinx
-    from dolfinx.io import XDMFFile
     from helmholtz_x.geometry_pkgx.xdmf_utils import XDMFReader
-
+    import ufl
     RijkeTube2D = XDMFReader("MeshDir/rijke")
     mesh, subdomains, facet_tags = RijkeTube2D.getAll()
 
-    rho_func = rho(mesh, x_f[0][0])
-    w_func = w(mesh, x_r[0][0])
-    h_func = h(mesh, x_f[0][0])
-
-    c_func = c(mesh, x_f[0][0])
-    n_func = n(mesh,x_f[0][0])
-    tau_func = tau(mesh,x_f[0][0])
-
+    rho_func = rho(mesh, x_f, a_f, rho_d, rho_u)
+    w_func = w(mesh, x_r, a_r)
+    h_func = h(mesh, x_f, a_f)
     
+    c_func = c_DG(mesh, x_f, c_in, c_out)
+
+    from dolfinx.io import XDMFFile
     with XDMFFile(MPI.COMM_WORLD, "Results/rho.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
         xdmf.write_mesh(mesh)
         xdmf.write_function(rho_func)
@@ -193,21 +99,23 @@ if __name__ == '__main__':
     with XDMFFile(MPI.COMM_WORLD, "Results/c.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
         xdmf.write_mesh(mesh)
         xdmf.write_function(c_func)
-
-    with XDMFFile(MPI.COMM_WORLD, "Results/n.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
-        xdmf.write_mesh(mesh)
-        xdmf.write_function(n_func)
-
+    
+    tau_func = tau_linear(mesh,x_f, a_f, tau_u, tau_d)
     with XDMFFile(MPI.COMM_WORLD, "Results/tau.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
         xdmf.write_mesh(mesh)
         xdmf.write_function(tau_func)
 
-    w2D_func = w2D(mesh, x_r)
-    with XDMFFile(MPI.COMM_WORLD, "Results/w2d.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
+    q_func = Q(mesh, h_func, Q_tot)
+    with XDMFFile(MPI.COMM_WORLD, "Results/q.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
         xdmf.write_mesh(mesh)
-        xdmf.write_function(w2D_func)
-    
-    v2D_func = v2D(mesh, x_f)
-    with XDMFFile(MPI.COMM_WORLD, "Results/v2d.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
+        xdmf.write_function(q_func)
+    integral_form = dolfinx.fem.form(q_func*ufl.dx)
+    print("Q gaussian: ", dolfinx.fem.assemble_scalar(integral_form))
+
+    q_uniform = Q_uniform(mesh, subdomains, Q_tot)
+    q_uniform_func = n_bump(mesh,x_f,a_f,q_uniform.value)
+    with XDMFFile(MPI.COMM_WORLD, "Results/q_uniform.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
         xdmf.write_mesh(mesh)
-        xdmf.write_function(v2D_func)
+        xdmf.write_function(q_uniform_func)
+    q_uniform_integral_form = dolfinx.fem.form(q_uniform_func*ufl.dx)
+    print("Q gaussian: ", dolfinx.fem.assemble_scalar(integral_form))

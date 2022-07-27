@@ -46,6 +46,11 @@ U_bulk = 0.1  # [m/s]
 # N = 0.014  # [/]
 n_value = 1
 
+# For 1D dimensional consistency
+d_tube = 0.047
+S_c = np.pi * d_tube **2 / 4
+n_1D = n_value # / S_c
+
 tau_u = 0.0
 tau_d = 0.001
 
@@ -58,7 +63,7 @@ x_r = np.array([[0.20+shifter, 0., 0.]])  # [m]
 a_r = 0.0047
 
 
-a_v = 0.0125
+a_v = a_f
 # ------------------------------------------------------------
 
 def gaussian(x,x_ref,sigma):
@@ -114,7 +119,7 @@ def tau(mesh, x_f):
         
         if midpoint[0] < x_f-a_f:
             tau.vector.setValueLocal(i, tau_u)
-        elif midpoint[0] > x_f-a_f and midpoint[0]< x_f+a_f :
+        elif midpoint[0] >= x_f-a_f and midpoint[0]<= x_f+a_f :
             tau.vector.setValueLocal(i, tau_u+(tau_d-tau_u)/(2*a_f)*(midpoint[0]-(x_f-a_f)))
         else:
             tau.vector.setValueLocal(i, tau_d)
@@ -141,29 +146,34 @@ if __name__ == '__main__':
     from mpi4py import MPI
     import dolfinx
     import matplotlib.pyplot as plt
-    mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 100)
+    mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 200)
     V = FunctionSpace(mesh, ("CG", 1))
 
     w_plot = w(mesh,x_r[0][0])
     plt.plot(mesh.geometry.x, w_plot.x.array.real)
-    plt.savefig("gaussian.pdf")
+    plt.ylabel("w")
+    plt.savefig("w.png")
     plt.clf()
 
     h_plot = h(mesh,x_f[0][0])
     plt.plot(mesh.geometry.x, h_plot.x.array.real)
-    plt.savefig("v.pdf")
+    plt.ylabel("h")
+    plt.savefig("h.png")
     plt.clf()
 
     rho_plot = rho(mesh,x_f[0][0])
     plt.plot(mesh.geometry.x, rho_plot.x.array.real)
-    plt.savefig("rho.pdf")
+    plt.ylabel(r"$\rho$")
+    plt.savefig("rho.png")
     plt.clf()
     
     n_plot = n(mesh,x_f[0][0])
     plt.plot(mesh.geometry.x, n_plot.x.array.real)
-    plt.savefig("n.pdf")
+    plt.ylabel(r"$n$")
+    plt.savefig("n.png")
     plt.clf()
 
     tau_plot = tau(mesh,x_f[0][0])
     plt.plot(mesh.geometry.x, tau_plot.x.array.real)
-    plt.savefig("tau.pdf")
+    plt.ylabel(r"$\tau$")
+    plt.savefig("tau.png")
