@@ -1,15 +1,6 @@
-"""
-A note on the nomenclature:
-dim ~ dimensional quantity
-ref ~ reference quantity for the non-dimensionalization
-in ~ inlet, same as u ~ upstream (of the flame)
-out ~ outlet, same as d ~ downstream (of the flame)
-"""
-
 from math import *
 import numpy as np
-from dolfinx.fem import Function,FunctionSpace
-from helmholtz_x.helmholtz_pkgx.helmholtz_utils import c_DG, rho,tau_linear,h,w,Q, Q_uniform, n_bump
+from helmholtz_x.helmholtz_pkgx.parameters_utils import c_DG, rho,tau_linear,h,w,Q, Q_uniform, n_bump
 
 r = 287.  # [J/kg/K]
 gamma = 1.4  # [/]
@@ -66,8 +57,6 @@ a_f = 0.025  # [m]
 
 x_r = np.array([[0.20, 0., 0.]])  # [m]
 a_r = 0.0047  # [m]
-
-a_h = a_f
 
 if __name__ == '__main__':
     from mpi4py import MPI

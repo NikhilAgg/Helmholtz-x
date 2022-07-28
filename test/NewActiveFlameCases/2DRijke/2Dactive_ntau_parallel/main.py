@@ -10,7 +10,7 @@ from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.active_flame_x_new import ActiveFlameNT1
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
 from helmholtz_x.geometry_pkgx.xdmf_utils import XDMFReader
-from helmholtz_x.helmholtz_pkgx.helmholtz_utils import rho,tau_linear,h,w
+from helmholtz_x.helmholtz_pkgx.parameters_utils import rho,tau_linear,h,w
 from dolfinx.io import XDMFFile
 
 # Read mesh 
@@ -26,7 +26,6 @@ boundary_conditions = {4: {'Neumann'},
 
 degree = 1
 
-# Define Speed of sound
 c = Constant(mesh, PETSc.ScalarType(400))
 # c = params.c(mesh,x_f[0][0])
 
@@ -43,9 +42,9 @@ C = matrices.C
 rho = rho(mesh, params.x_f, params.a_f, params.rho_d, params.rho_u)
 w = w(mesh, params.x_r, params.a_r)
 h = h(mesh, params.x_f, params.a_f)
-n = params.n_2D
-tau = tau_linear(mesh,params.x_f, params.a_f, params.tau_u, params.tau_d)
 
+n = params.n_2D
+tau = tau_linear(mesh,params.x_f, params.a_f, params.tau_u, params.tau_d, degree=degree)
 
 target = 200 * 2 * np.pi # 150 * 2 * np.pi
 
@@ -57,8 +56,7 @@ omega, p = normalize_eigenvector(mesh, E, 0, degree=degree, which='right')
 if MPI.COMM_WORLD.rank == 0:
     print(f"Eigenvalue-> {omega:.3f} | Eigenfrequency ->  {omega/(2*np.pi):.3f}")
 
-
-p.name = "Acoustic_Wave"
+p.name = "P"
 with XDMFFile(MPI.COMM_WORLD, "Results/p.xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
     xdmf.write_mesh(mesh)
     xdmf.write_function(p)

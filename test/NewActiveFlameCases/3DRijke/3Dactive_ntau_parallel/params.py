@@ -9,7 +9,7 @@ out ~ outlet, same as d ~ downstream (of the flame)
 from math import *
 import numpy as np
 from dolfinx.fem import Function,FunctionSpace
-from helmholtz_x.helmholtz_pkgx.helmholtz_utils import c_DG, rho,tau_linear,h,w
+from helmholtz_x.helmholtz_pkgx.parameters_utils import c_DG, rho,tau_linear,h,w
 
 r = 287.  # [J/kg/K]
 gamma = 1.4  # [/]
@@ -47,16 +47,9 @@ Z_out = (1 + R_out)/(1 - R_out)
 Y_in = 1/Z_in
 Y_out = 1/Z_out
 
-# ------------------------------------------------------------
-# Flame transfer function
-
 Q_tot = 200.  # [W]
 U_bulk = 0.1  # [m/s]
-n_value = 1
-
-# For 2D dimensional consistency
-d_tube = 0.047
-n_2D = n_value#/((np.pi/4)*d_tube)
+n = 1
 
 tau_u = 0.000
 tau_d = 0.001
@@ -66,10 +59,6 @@ a_f = 0.025  # [m]
 
 x_r = np.array([[0., 0., 0.20]])  # [m]
 a_r = 0.0047  # [m]
-
-a_h = a_f
-
-
 
 if __name__ == '__main__':
     from mpi4py import MPI

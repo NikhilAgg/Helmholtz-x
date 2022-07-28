@@ -725,7 +725,7 @@ class ActiveFlameNT2:
 
     def _assemble_left_vector(self):
 
-        from helmholtz_x.helmholtz_pkgx.helmholtz_utils import Q_uniform, n_bump
+        from helmholtz_x.helmholtz_pkgx.parameters_utils import Q_uniform, n_bump
         if self.mesh.geometry.dim==1 or self.mesh.geometry.dim==2:
             x_f = np.array([[0.25, 0., 0.]])  # [m]
         elif self.mesh.geometry.dim==3:
