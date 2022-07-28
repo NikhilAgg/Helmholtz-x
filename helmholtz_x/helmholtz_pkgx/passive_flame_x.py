@@ -48,17 +48,13 @@ class PassiveFlame:
         self.c = c
         self.degree = degree
 
-
         self.dx = Measure('dx', domain=mesh)
         self.ds = Measure('ds', domain=mesh, subdomain_data=facet_tags)
 
-
         self.V = FunctionSpace(mesh, ("Lagrange", degree))
-
 
         self.u = TrialFunction(self.V)
         self.v = TestFunction(self.V)
-
 
         self.bcs = []
         self.integrals_R = []
@@ -72,15 +68,14 @@ class PassiveFlame:
                 bc = dirichletbc(u_bc, dofs)
                 self.bcs.append(bc)
             if 'Robin' in boundary_conditions[i]:
-                Y = boundary_conditions[i]['Robin']
-                integral_R = 1j * Y * self.c * inner(self.u, self.v) * self.ds(i)
+                Z = boundary_conditions[i]['Robin']
+                integral_R = 1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_R) 
 
         self._A = None
         self._B = None
         self._B_adj = None
         self._C = None
-
 
     @property
     def A(self):
@@ -98,12 +93,9 @@ class PassiveFlame:
     def C(self):
         return self._C
 
-
     def assemble_A(self):
 
-        # defining ufl forms
         a = form(-self.c**2 * inner(grad(self.u), grad(self.v))*self.dx)
-
         A = assemble_matrix(a, bcs=self.bcs)
         A.assemble()
 
@@ -113,7 +105,6 @@ class PassiveFlame:
 
         N = self.V.dofmap.index_map.size_global
         n = self.V.dofmap.index_map.size_local
-
 
         if self.integrals_R:
 
@@ -142,5 +133,3 @@ class PassiveFlame:
         C.assemble()
         self._C = C
 
-
-# if __name__ == '__main__':

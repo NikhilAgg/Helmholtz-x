@@ -116,7 +116,3 @@ class Blochifier:
     def blochify_C(self):
         C = self.blochify(self.passive_matrices.C)
         self._C = C
-
-    # def blochify_D(self):
-    #     D = self.blohicfy(self.active_matrix.submatrices)
-    #     self._D = D

@@ -43,27 +43,10 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     V = FunctionSpace(mesh, ("CG", degree))
     p = Function(V)
 
-    # def FixSign(x):
-    #     # Force the eigenfunction to be real and positive, since
-    #     # some eigensolvers may return the eigenvector multiplied
-    #     # by a complex number of modulus one.
-    #     comm = x.getComm()
-    #     rank = comm.getRank()
-    #     n = 1 if rank == 0 else 0
-    #     aux = PETSc.Vec().createMPI((n, PETSc.DECIDE), comm=comm)
-    #     if rank == 0: aux[0] = x[0]
-    #     aux.assemble()
-    #     x0 = aux.sum()
-    #     sign = x0 / abs(x0)
-    #     x.scale(1.0 / sign)
-    #
-    # FixSign(vr)
-
     p.vector.setArray(vr.array)
     p.x.scatter_forward()
 
     meas = np.sqrt(mesh.comm.allreduce(assemble_scalar(form(p*p*dx)), op=MPI.SUM))
-    # print("MEAS:", meas)
     
     temp = vr.array
     temp= temp/meas
@@ -73,7 +56,6 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     p_normalized.x.scatter_forward()
 
     return omega, p_normalized
-    # return omega, p
 
 def normalize_adjoint(omega_dir, p_dir, p_adj, matrices, D=None):
     """

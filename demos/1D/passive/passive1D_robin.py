@@ -1,11 +1,6 @@
 import numpy as np
 import dolfinx
-<<<<<<< HEAD
 from dolfinx.mesh import meshtags,create_unit_interval
-=======
-from dolfinx.generation import  UnitIntervalMesh
-from dolfinx.mesh import MeshTags
->>>>>>> 584a85f443b9456290c3724940196875268be88b
 from mpi4py import MPI
 import matplotlib.pyplot as plt
 from helmholtz_x.helmholtz_pkgx.eigenvectors_x import normalize_eigenvector
@@ -37,16 +32,12 @@ for (marker, locator) in boundaries:
 facet_indices = np.array(np.hstack(facet_indices), dtype=np.int32)
 facet_markers = np.array(np.hstack(facet_markers), dtype=np.int32)
 sorted_facets = np.argsort(facet_indices)
-<<<<<<< HEAD
 facet_tag = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
-=======
-facet_tag = MeshTags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
->>>>>>> 584a85f443b9456290c3724940196875268be88b
 
 # Define the boundary conditions
 
-boundary_conditions = {1: {'Robin': params.Y_in},  # inlet
-                       2: {'Robin': params.Y_out}}  # outlet
+boundary_conditions = {1: {'Robin': params.Z_in},  # inlet
+                       2: {'Robin': params.Z_out}}  # outlet
 
 # Define Speed of sound
 
@@ -71,27 +62,6 @@ eigensolver = pep_solver(A,B,C,np.pi, 5,print_results=True)
 
 omega, uh = normalize_eigenvector(mesh, eigensolver, 0)
 print(omega)
-
-# plt.plot(uh.vector[:].real)
-# plt.plot(uh.vector[:].imag)
-# plt.savefig("1Dpassive_R.png")
-
-# import dolfinx.plot
-# topology, cell_types = dolfinx.plot.create_vtk_topology(mesh, mesh.topology.dim)
-
-# import pyvista
-# grid = pyvista.UnstructuredGrid(topology, cell_types, mesh.geometry.x)
-# grid.point_data["u"] = uh.compute_point_values().real
-# grid.set_active_scalars("u")
-
-# plotter = pyvista.Plotter()
-# plotter.add_mesh(grid, show_edges=True, show_scalar_bar=True)
-# plotter.view_xy()
-# if not pyvista.OFF_SCREEN:
-#     plotter.show()
-# else:
-#     figure = plotter.screenshot("fundamentals.png")
-
 
 
 

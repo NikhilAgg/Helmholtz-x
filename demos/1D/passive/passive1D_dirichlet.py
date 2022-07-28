@@ -1,11 +1,6 @@
 import numpy as np
 import dolfinx
-<<<<<<< HEAD
 from dolfinx.mesh import meshtags,create_unit_interval
-=======
-from dolfinx.generation import  UnitIntervalMesh
-from dolfinx.mesh import MeshTags
->>>>>>> 584a85f443b9456290c3724940196875268be88b
 from mpi4py import MPI
 from dolfinx.fem import Constant
 import matplotlib.pyplot as plt
@@ -38,11 +33,7 @@ for (marker, locator) in boundaries:
 facet_indices = np.array(np.hstack(facet_indices), dtype=np.int32)
 facet_markers = np.array(np.hstack(facet_markers), dtype=np.int32)
 sorted_facets = np.argsort(facet_indices)
-<<<<<<< HEAD
 facet_tag = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
-=======
-facet_tag = MeshTags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
->>>>>>> 584a85f443b9456290c3724940196875268be88b
 
 # Define the boundary conditions
 

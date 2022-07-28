@@ -40,9 +40,9 @@ geometry = Geometry("MeshDir/ekrem", points, edges, lcar)
 geometry.make_mesh(False)
 
 boundary_conditions = {1: 'Neumann',
-                       4: {'Robin': params.Y_out},
+                       4: {'Robin': params.Z_out},
                        3: 'Neumann',
-                       2: {'Robin': params.Y_in}}
+                       2: {'Robin': params.Z_in}}
 
 
 degree = 2

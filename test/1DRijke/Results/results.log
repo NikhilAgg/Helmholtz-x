@@ -1,0 +1,29 @@
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
+-> Fixed point iteration started.
+
+* iter =  1
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1256.97129726  +0.26036991j,  |domega| = 4.23e-01
+
+* iter =  2
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1257.30461866  +0.52071527j,  |domega| = 4.23e-01
+
+* iter =  3
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1257.30461870  +0.52071522j,  |domega| = 6.60e-08
+
+* iter =  4
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1257.30461870  +0.52071522j,  |domega| = 7.57e-11
+
+Eigenfrequency ->  200.106+0.083j

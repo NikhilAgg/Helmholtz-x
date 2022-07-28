@@ -50,9 +50,9 @@ subdomains = MeshTags(geometry.mesh, tdim, marked_cells, np.full(len(marked_cell
 
 degree = 2
 
-boundary_conditions = {1: {'Robin': params.Y_in},
+boundary_conditions = {1: {'Robin': params.Z_in},
                        2: 'Neumann',
-                       3: {'Robin': params.Y_out},
+                       3: {'Robin': params.Z_out},
                        4: 'Neumann'}
 
 c = params.c(geometry.mesh)

@@ -3,6 +3,7 @@ from mpi4py import MPI
 import numpy as np
 from .eigenvectors_x import normalize_eigenvector
 from .petsc4py_utils import vector_matrix_vector
+
 def results(E):
 
     print()
@@ -43,16 +44,13 @@ def eps_solver(A, C, target, nev, two_sided=False, print_results=False):
     C = - C
     E.setOperators(A, C)
 
-    # E.setProblemType(SLEPc.EPS.ProblemType.GNHEP)
-
     # spectral transformation
     st = E.getST()
     st.setType('sinvert')
-    E.setKrylovSchurPartitions(1) # MPI.COMM_WORLD.Get_size()
+    # E.setKrylovSchurPartitions(1) # MPI.COMM_WORLD.Get_size()
 
     E.setTarget(target)
     E.setWhichEigenpairs(SLEPc.EPS.Which.TARGET_MAGNITUDE)  # TARGET_REAL or TARGET_IMAGINARY
-    #print("target is : ", E.getTarget())
     E.setTwoSided(two_sided)
 
     E.setDimensions(nev, SLEPc.DECIDE)
@@ -95,13 +93,10 @@ def pep_solver(A, B, C, target, nev, print_results=False):
 
     """
 
-
     Q = SLEPc.PEP().create(MPI.COMM_WORLD)
 
     operators = [A, B, C]
     Q.setOperators(operators)
-
-    # Q.setProblemType(SLEPc.PEP.ProblemType.GENERAL)
 
     # spectral transformation
     st = Q.getST()
@@ -109,7 +104,6 @@ def pep_solver(A, B, C, target, nev, print_results=False):
 
     Q.setTarget(target)
     Q.setWhichEigenpairs(SLEPc.PEP.Which.TARGET_MAGNITUDE)  # TARGET_REAL or TARGET_IMAGINARY
-    #print("target is : ", Q.getTarget())
     Q.setDimensions(nev, SLEPc.DECIDE)
     Q.setTolerances(1e-15)
     Q.setFromOptions()
@@ -124,6 +118,7 @@ def pep_solver(A, B, C, target, nev, print_results=False):
 
     if print_results and MPI.COMM_WORLD.rank == 0:
         results(Q)
+
     return Q
     
 
@@ -131,8 +126,6 @@ def fixed_point_iteration_pep( operators, D,  target, nev=2, i=0,
                                     tol=1e-8, maxiter=50,
                                     print_results=False,
                                     problem_type='direct'):
-    
-
 
     A = operators.A
     C = operators.C
@@ -224,7 +217,7 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
     s = "{{:+.{}f}}".format(s)
 
     if MPI.COMM_WORLD.rank == 0:
-        print("-> Starting eigenvalue is found: {}  {}j. ".format(
+        print("+ Starting eigenvalue is found: {}  {}j. ".format(
                  s.format(omega[k + 1].real), s.format(omega[k + 1].imag)))
         print("-> Iterations are starting.\n ")
     while abs(domega) > tol:
@@ -260,7 +253,6 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
             ))
 
     return E
-
 
 def newton_solver(operators, D,
            init, nev=2, i=0,
@@ -345,70 +337,3 @@ def newton_solver(operators, D,
         k += 1
 
     return E
-
-
-def fixed_point_iteration_ntau(operators, target, mesh, subdomains,
-                    x_r, rho_in, Q, U,
-                    n, tau, degree=1, nev=2, i=0,
-                              tol=1e-8, maxiter=50,
-                              print_results=False,
-                              problem_type='direct'):
-
-    A = operators.A
-    C = operators.C
-    B = operators.B
-    if problem_type == 'adjoint':
-        B = operators.B_adj
-
-    omega = np.zeros(maxiter, dtype=complex)
-    f = np.zeros(maxiter, dtype=complex)
-    alpha = np.zeros(maxiter, dtype=complex)
-    E = pep_solver(A, B, C, target, nev, print_results=print_results)
-    vr, vi = A.getVecs()
-    eig = E.getEigenpair(i, vr, vi)
-    omega[0] = eig
-    alpha[0] = .5
-
-    domega = 2 * tol
-    k = - 1
-
-    # formatting
-    s = "{:.0e}".format(tol)
-    s = int(s[-2:])
-    s = "{{:+.{}f}}".format(s)
-
-    from helmholtz_x.helmholtz_pkgx.active_flame_x import ActiveFlameNT
-
-    while abs(domega) > tol:
-
-        k += 1
-        
-        D = ActiveFlameNT(mesh, subdomains,
-                    x_r, rho_in, Q, U,
-                    n, tau, omega[k], 
-                    degree=degree)
-        D.assemble_submatrices()
-        D_Mat = D.matrix
-        if problem_type == 'adjoint':
-            D_Mat = D.adjoint_matrix
-
-        nlinA = A - D_Mat
-        E = pep_solver(nlinA, B, C, target, nev, print_results=print_results)
-        eig = E.getEigenpair(i, vr, vi)
-        f[k] = eig
-
-        if k != 0:
-            alpha[k] = 1 / (1 - ((f[k] - f[k-1]) / (omega[k] - omega[k-1])))
-
-        omega[k+1] = alpha[k] * f[k] + (1 - alpha[k]) * omega[k]
-
-        domega = omega[k+1] - omega[k]
-        if MPI.COMM_WORLD.rank == 0:
-            print('iter = {:2d},  omega = {}  {}j,  |domega| = {:.2e}'.format(
-                k + 1, s.format(omega[k + 1].real), s.format(omega[k + 1].imag), abs(domega)
-            ))
-
-    return E
-
-
-

@@ -44,8 +44,8 @@ facet_tag = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sor
 
 # Define the boundary conditions
 
-boundary_conditions = {1: {'Robin': params_dim.Y_in},  # inlet
-                       2: {'Robin': params_dim.Y_out}}  # outlet
+boundary_conditions = {1: {'Robin': params_dim.Z_in},  # inlet
+                       2: {'Robin': params_dim.Z_out}}  # outlet
 
 # Define Speed of sound
 
