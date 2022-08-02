@@ -24,5 +24,6 @@ def interpolator(xs,ys,data,mesh):
         new_data[ii] = f(xs_dolf[ii],ys_dolf[ii])
     dolf_function = Function(V)
     dolf_function.x.array[:] = new_data
+    dolf_function.x.scatter_forward()
     print("Interpolation is done.")
     return dolf_function

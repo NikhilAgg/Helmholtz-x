@@ -4,6 +4,7 @@ from dolfinx.fem.petsc import assemble_vector
 from dolfinx.geometry import compute_collisions, compute_colliding_cells, BoundingBoxTree
 from mpi4py import MPI
 from ufl import Measure, TestFunction, TrialFunction, inner, as_vector, grad
+import ufl
 from petsc4py import PETSc
 import numpy as np
 
@@ -81,7 +82,7 @@ class ActiveFlame:
 
         phi_k = self.v
         volume_form = form(Constant(self.mesh, PETSc.ScalarType(1))*dx(fl))
-        V_fl = MPI.COMM_WORLD.allreduce(dolfinx.fem.assemble_scalar(volume_form), op=MPI.SUM)
+        V_fl = MPI.COMM_WORLD.allreduce(assemble_scalar(volume_form), op=MPI.SUM)
         b = Function(self.V)
         b.x.array[:] = 0
         const = Constant(self.mesh, (PETSc.ScalarType(1/V_fl))) 
@@ -378,7 +379,8 @@ class ActiveFlameNT:
         self.phi_i = TrialFunction(self.V)
         self.phi_j = TestFunction(self.V)
 
-        self.dx = Measure("dx", subdomain_data=self.subdomains)
+        # self.dx = Measure("dx", domain=self.mesh, subdomain_data=self.subdomains)
+        self.dx = ufl.dx
 
         self._a = self._assemble_left_vector()
         self._b = self._assemble_right_vector()
@@ -494,17 +496,36 @@ class ActiveFlameNT:
 
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
-
+        print("Global size: ", global_size)
+        print("Local Size: ", local_size)
+        print("Length of rows: ", len(row))
+        print("Length of cols:", len(col))
         mat = PETSc.Mat().create(PETSc.COMM_WORLD)
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('mpiaij')
-        NNZ = len(row)
-        mat.setPreallocationNNZ([NNZ,NNZ])
+        NNZ = len(row)*np.ones(local_size,dtype=np.int32)
+        ONNZ = np.zeros(local_size,dtype=np.int32)
+        # DNNZ[row] = 1
+        DNNZ = np.zeros(local_size,dtype=np.int32)
+        DNNZ[row] = len(col)
+        # mat.setPreallocationNNZ([DNNZ,ONNZ])
+        mat.setPreallocationNNZ([DNNZ,ONNZ])
+        # o_nnz = len(row)*np.ones(len(col),dtype=np.int32)
+        # d_nnz = np.ones(local_size, dtype=np.int32)
+        # mat.setPreallocationNNZ((d_nnz,d_nnz))
+
         mat.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
         mat.setUp()
         mat.setValues(row, col, val, addv=PETSc.InsertMode.ADD_VALUES)
         mat.assemblyBegin()
         mat.assemblyEnd()
+
+        # from scipy.sparse import csr_matrix
+        # ai, aj, av = mat.getValuesCSR()
+        # CSR = csr_matrix((av, aj, ai), shape=(global_size,global_size))
+        # import matplotlib.pyplot as plt
+        # plt.spy(CSR)
+        # plt.savefig("CSR.png")
 
         self._D = mat
 

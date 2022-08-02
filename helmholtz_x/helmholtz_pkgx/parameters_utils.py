@@ -34,6 +34,13 @@ def rho(mesh, x_f, a_f, rho_d, rho_u, degree=1):
         rho.interpolate(lambda x: density(x[2], x_f, a_f, rho_d, rho_u))
     return rho
 
+def rho_ideal(mesh, temperature, P_amb, R):
+    V = FunctionSpace(mesh, ("DG", 0))
+    density = Function(V)
+    density.x.array[:] =  P_amb /(R * temperature.x.array)
+    density.x.scatter_forward()
+    return density
+
 def w(mesh, x_r, a_r, degree=1):
     V = FunctionSpace(mesh, ("CG", degree))
     w = Function(V)
@@ -130,6 +137,13 @@ def c_DG(mesh, x_f, c_u, c_d):
             c.vector.setValueLocal(i, c_u)
         else:
             c.vector.setValueLocal(i, c_d)
+    return c
+
+def sound_speed(mesh, temperature):
+    V = FunctionSpace(mesh, ("DG", 0))
+    c = Function(V)
+    c.x.array[:] =  20.05 * np.sqrt(temperature.x.array)
+    c.x.scatter_forward()
     return c
 
 def Q(mesh, h, Q_total, degree=1):

@@ -77,6 +77,9 @@ class PassiveFlame:
         self._B_adj = None
         self._C = None
 
+        if MPI.COMM_WORLD.Get_rank()==0:
+            print("- Passive matrices are assembling..")
+
     @property
     def A(self):
         return self._A
