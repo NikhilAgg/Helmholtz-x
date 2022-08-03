@@ -1,3 +1,4 @@
+from operator import le
 import basix
 from dolfinx.fem  import Function, FunctionSpace, Constant, form, assemble_scalar
 from dolfinx.fem.petsc import assemble_vector
@@ -375,11 +376,9 @@ class ActiveFlameNT:
         self.dofmaps = self.V.dofmap
         self.dimension = self.mesh.topology.dim
 
-
         self.phi_i = TrialFunction(self.V)
         self.phi_j = TestFunction(self.V)
 
-        # self.dx = Measure("dx", domain=self.mesh, subdomain_data=self.subdomains)
         self.dx = ufl.dx
 
         self._a = self._assemble_left_vector()
@@ -432,9 +431,7 @@ class ActiveFlameNT:
         exp_tau.x.array[:] = np.exp( 1j*self.omega*self.tau.x.array)
         exp_tau.x.scatter_forward()
 
-        n = Constant(self.mesh, (PETSc.ScalarType(self.n)))
-
-        form_to_assemble = form(coefficient *  self.phi_i * self.h * n * exp_tau  *  self.dx)
+        form_to_assemble = form(coefficient *  self.phi_i * self.h * self.n * exp_tau  *  self.dx)
 
         left_vector = self._indices_and_values(form_to_assemble)
 
@@ -463,7 +460,7 @@ class ActiveFlameNT:
 
         # Parallelization
         right_vector = self.comm.gather(right_vector, root=0)
-
+        
         if self.rank == 0:
             right_vector = [j for i in right_vector for j in i]
             chunks = [[] for _ in range(self.size)]
@@ -473,6 +470,7 @@ class ActiveFlameNT:
             right_vector = None
             chunks = None
         right_vector = self.comm.scatter(chunks, root=0)
+
         return right_vector
 
     def assemble_submatrices(self, problem_type='direct'):
@@ -496,36 +494,20 @@ class ActiveFlameNT:
 
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
-        print("Global size: ", global_size)
-        print("Local Size: ", local_size)
-        print("Length of rows: ", len(row))
-        print("Length of cols:", len(col))
+        
         mat = PETSc.Mat().create(PETSc.COMM_WORLD)
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('mpiaij')
-        NNZ = len(row)*np.ones(local_size,dtype=np.int32)
         ONNZ = np.zeros(local_size,dtype=np.int32)
-        # DNNZ[row] = 1
         DNNZ = np.zeros(local_size,dtype=np.int32)
-        DNNZ[row] = len(col)
-        # mat.setPreallocationNNZ([DNNZ,ONNZ])
-        mat.setPreallocationNNZ([DNNZ,ONNZ])
-        # o_nnz = len(row)*np.ones(len(col),dtype=np.int32)
-        # d_nnz = np.ones(local_size, dtype=np.int32)
-        # mat.setPreallocationNNZ((d_nnz,d_nnz))
-
+        nnz_row_indices = [x for x in row if x < local_size]
+        ONNZ[nnz_row_indices] = len(col)
+        mat.setPreallocationNNZ([ONNZ,DNNZ])
         mat.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
         mat.setUp()
         mat.setValues(row, col, val, addv=PETSc.InsertMode.ADD_VALUES)
         mat.assemblyBegin()
         mat.assemblyEnd()
-
-        # from scipy.sparse import csr_matrix
-        # ai, aj, av = mat.getValuesCSR()
-        # CSR = csr_matrix((av, aj, ai), shape=(global_size,global_size))
-        # import matplotlib.pyplot as plt
-        # plt.spy(CSR)
-        # plt.savefig("CSR.png")
 
         self._D = mat
 
