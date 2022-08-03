@@ -437,11 +437,7 @@ class ActiveFlameNT:
 
         coefficient = (self.gamma - 1) * q_tot / self.U_bulk
 
-        exp_tau = Function(self.V)
-        exp_tau.x.array[:] = np.exp( 1j*self.omega*self.tau.x.array)
-        exp_tau.x.scatter_forward()
-
-        form_to_assemble = form(coefficient *  self.phi_i * self.h * self.n * exp_tau  *  self.dx)
+        form_to_assemble = form(coefficient *  self.phi_i * self.h * self.n * ufl.exp(1j*self.omega*self.tau)  *  self.dx)
 
         left_vector = self._indices_and_values(form_to_assemble)
 
@@ -465,12 +461,13 @@ class ActiveFlameNT:
         else:
             n_ref = as_vector([0,0,1])
 
-        gradient_form = form(inner(n_ref,grad(self.phi_j) / self.rho * self.w) * self.dx)
+        gradient_form = form(inner(n_ref,grad(self.phi_j)) / self.rho * self.w * self.dx)
 
         right_vector = self._indices_and_values(gradient_form)
       
         right_vector = self.comm.gather(right_vector, root=0)
 
+        # Parallelization
         if self.rank == 0:
             right_vector = [self._remove_repeating_dofs([item for sublist in right_vector for item in sublist])]
             right_vector = [j for i in right_vector for j in i]
@@ -481,7 +478,7 @@ class ActiveFlameNT:
             right_vector = None
             chunks = None
         right_vector = self.comm.scatter(chunks, root=0)
-            
+        # print([tup[0]for tup in right_vector], "RANK: ", self.rank)
         return right_vector
 
     def assemble_submatrices(self, problem_type='direct'):
@@ -496,7 +493,7 @@ class ActiveFlameNT:
 
         row = [item[0] for item in A]
         col = [item[0] for item in B]
-
+        
         row_vals = [item[1] for item in A]
         col_vals = [item[1] for item in B]
 
@@ -505,21 +502,44 @@ class ActiveFlameNT:
 
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
+
         if self.rank==0:
-            print("- Generating Matrix D.")
+            print("- Generating Matrix D..")
+
         mat = PETSc.Mat().create(PETSc.COMM_WORLD)
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('mpiaij')
-        ONNZ = np.zeros(local_size,dtype=np.int32)
-        DNNZ = np.zeros(local_size,dtype=np.int32)
-        nnz_row_indices = [x for x in row if x < local_size]
-        ONNZ[nnz_row_indices] = len(col)
-        mat.setPreallocationNNZ([ONNZ,DNNZ])
+        ONNZ = np.ones(local_size,dtype=np.int32)
+        
+        # diagonal_indices = list(set(row).intersection(col))
+        # DNNZ[diagonal_indices] = 1
+        # print("DIAGONAL LEN: ", len(diagonal_indices), "Rank: ",self.rank)
+        # print("Local Size", local_size, "Rank: ",self.rank)
+        # print("LEN A:",len(row), " - MIN A", min(row)," - MAX A",max(row), " - Rank: ",self.rank)
+        # print("LEN B:",len(col), "- MIN B", min(col)," - MAX B",max(col), " - Rank: ",self.rank)
+        if self.size == 1:
+            DNNZ = np.zeros(local_size,dtype=np.int32)
+            diagonal_indices = list(set(row).intersection(col))
+            DNNZ[diagonal_indices] = 1
+            nnz_row_indices = [x for x in row if x < local_size]
+            # print("LEN NNZ_ROW: ", len(nnz_row_indices), "Rank: ",self.rank )
+            ONNZ[nnz_row_indices] = len(col)
+            mat.setPreallocationNNZ([ONNZ, DNNZ])
+        else:
+            ONNZ *= len(row)
+            mat.setPreallocationNNZ([ONNZ, ONNZ]) 
         mat.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
         mat.setUp()
         mat.setValues(row, col, val, addv=PETSc.InsertMode.ADD_VALUES)
         mat.assemblyBegin()
         mat.assemblyEnd()
+
+        # from scipy.sparse import csr_matrix
+        # ai, aj, av = mat.getValuesCSR()
+        # CSR = csr_matrix((av, aj, ai),shape=(local_size, global_size))
+        # import matplotlib.pyplot as plt
+        # plt.spy(CSR)
+        # plt.savefig(f"CSR_{self.rank}.png")
 
         self._D = mat
 
@@ -652,7 +672,7 @@ class ActiveFlameNT2:
         else:
             n_ref = as_vector([0,0,1])
 
-        gradient_form = form(inner(n_ref,grad(self.phi_j) / self.rho * self.w) * self.dx)
+        gradient_form = form(inner(n_ref,grad(self.phi_j)) / self.rho * self.w * self.dx)
 
         right_vector = self._indices_and_values(gradient_form)
 
@@ -711,3 +731,90 @@ class ActiveFlameNT2:
         self.assemble_submatrices(problem_type)
         if self.rank==0:
             print("- Matrix D is assembled.")
+
+
+class ActiveFlameNT3:
+
+    def __init__(self, mesh, subdomains, w, h, rho, Q_tot, U_bulk, n, tau, degree=1):
+
+        self.mesh = mesh
+        self.subdomains = subdomains
+        self.w = w
+        self.h = h
+        self.rho = rho
+        self.U_bulk = U_bulk
+        self.Q_tot = Q_tot
+        self.n = n
+        self.tau = tau
+        self.degree = degree
+        self.gamma = 1.4
+
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size()
+        self.tol = 1e-5
+        self.omega = Constant(mesh,(PETSc.ScalarType(0)))
+
+        self._a = None
+        self._b = None
+        self._D_kj = None
+        self._D_kj_adj = None
+        self._D = None
+        self._D_adj = None
+
+        self.V = FunctionSpace(mesh, ("Lagrange", degree))
+        self.dofmaps = self.V.dofmap
+        self.dimension = self.mesh.topology.dim
+
+        self.phi_i = TrialFunction(self.V)
+        self.phi_j = TestFunction(self.V)
+
+        self.dx = ufl.dx
+
+        self.D = self._assemble()
+        
+
+    def _assemble(self):
+
+        volume_form = form(Constant(self.mesh, PETSc.ScalarType(1))*self.dx)
+        V_domain = MPI.COMM_WORLD.allreduce(assemble_scalar(volume_form), op=MPI.SUM)
+        q_tot = Constant(self.mesh, (PETSc.ScalarType(self.Q_tot/V_domain)))
+
+        coefficient = (self.gamma - 1) * q_tot / self.U_bulk
+
+        exp_tau = ufl.exp(1j*self.omega*self.tau)
+
+
+        if self.dimension == 1:
+            n_ref = as_vector([1])
+        elif self.dimension == 2:
+            n_ref = as_vector([1,0])
+        else:
+            n_ref = as_vector([0,0,1])
+        
+        
+
+        total_form = form(coefficient *  self.phi_i * self.h * self.n * exp_tau *  inner(n_ref,grad(self.phi_j) / self.rho * self.w) * self.dx )
+
+        from dolfinx.fem.petsc import assemble_matrix
+        D = assemble_matrix(total_form)
+        D.assemble()
+        
+        from scipy.sparse import csr_matrix
+        ai, aj, av = D.getValuesCSR()
+        CSR = csr_matrix((av, aj, ai))
+        import matplotlib.pyplot as plt
+        plt.spy(CSR)
+        plt.savefig(f"CSR_NT3.png")
+        plt.clf()
+
+        return D
+
+    
+
+    def assemble_matrix(self, omega, problem_type='direct'):
+        self.omega.value = omega
+        print("OMEGA: ", self.omega.value)
+        if self.rank==0:
+            print("- Matrix D is assembled.")
+        self.matrix = self.D

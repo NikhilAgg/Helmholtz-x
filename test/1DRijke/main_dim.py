@@ -88,9 +88,7 @@ omega, uh = normalize_eigenvector(mesh, E, 0, degree=degree, which='right')
 if MPI.COMM_WORLD.rank == 0:
     print(f"Eigenfrequency ->  {omega/(2*np.pi):.3f}")
 
-plt.plot(uh.x.array.real)
-plt.savefig("Results/1Dactive_real.png")
-plt.clf()
-
-plt.plot(uh.x.array.imag)
-plt.savefig("Results/1Dactive_imag.png")
+fig, ax = plt.subplots(2, figsize=(12, 6))
+ax[0].plot(uh.x.array.real)
+ax[1].plot(uh.x.array.imag)
+plt.savefig("Results/"+"1DActive"+".png")
