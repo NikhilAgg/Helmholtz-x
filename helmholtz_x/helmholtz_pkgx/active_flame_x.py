@@ -1,4 +1,3 @@
-from operator import le
 import basix
 from dolfinx.fem  import Function, FunctionSpace, Constant, form, assemble_scalar
 from dolfinx.fem.petsc import assemble_vector
@@ -419,6 +418,17 @@ class ActiveFlameNT:
 
         return packed
 
+    def _remove_repeating_dofs(self, vector):
+        seen = set()
+        keep = []
+        for ind, value in vector:
+            if ind in seen:
+                pass
+            else:
+                seen.add(ind)
+                keep.append((ind, value))
+        return keep
+
     def _assemble_left_vector(self):
 
         volume_form = form(Constant(self.mesh, PETSc.ScalarType(1))*self.dx)
@@ -443,6 +453,7 @@ class ActiveFlameNT:
             left_vector=[]
         left_vector = self.comm.bcast(left_vector,root=0)
 
+        left_vector = self._remove_repeating_dofs(left_vector)
         return left_vector
 
     def _assemble_right_vector(self):
@@ -457,11 +468,11 @@ class ActiveFlameNT:
         gradient_form = form(inner(n_ref,grad(self.phi_j) / self.rho * self.w) * self.dx)
 
         right_vector = self._indices_and_values(gradient_form)
-
-        # Parallelization
+      
         right_vector = self.comm.gather(right_vector, root=0)
-        
+
         if self.rank == 0:
+            right_vector = [self._remove_repeating_dofs([item for sublist in right_vector for item in sublist])]
             right_vector = [j for i in right_vector for j in i]
             chunks = [[] for _ in range(self.size)]
             for i, chunk in enumerate(right_vector):
@@ -470,7 +481,7 @@ class ActiveFlameNT:
             right_vector = None
             chunks = None
         right_vector = self.comm.scatter(chunks, root=0)
-
+            
         return right_vector
 
     def assemble_submatrices(self, problem_type='direct'):
@@ -494,7 +505,8 @@ class ActiveFlameNT:
 
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
-        
+        if self.rank==0:
+            print("- Generating Matrix D.")
         mat = PETSc.Mat().create(PETSc.COMM_WORLD)
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('mpiaij')
