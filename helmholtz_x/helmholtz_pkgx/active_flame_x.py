@@ -478,7 +478,7 @@ class ActiveFlameNT:
             right_vector = None
             chunks = None
         right_vector = self.comm.scatter(chunks, root=0)
-        # print([tup[0]for tup in right_vector], "RANK: ", self.rank)
+
         return right_vector
 
     def assemble_submatrices(self, problem_type='direct'):
