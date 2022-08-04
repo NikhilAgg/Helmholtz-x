@@ -5,7 +5,6 @@ from dolfinx.fem import ( Function, FunctionSpace, form)
 from ufl import dx
 from .petsc4py_utils import multiply, vector_matrix_vector, matrix_vector
 from mpi4py import MPI
-from petsc4py import PETSc
 
 def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     """ 
@@ -52,8 +51,12 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     temp= temp/meas
 
     p_normalized = Function(V) # Required for Parallel runs
+    p_normalized.name = "P"
     p_normalized.vector.setArray(temp)
     p_normalized.x.scatter_forward()
+
+    if MPI.COMM_WORLD.rank == 0:
+        print(f"Eigenvalue-> {omega:.3f} | Eigenfrequency ->  {omega/(2*np.pi):.3f}\n")
 
     return omega, p_normalized
 

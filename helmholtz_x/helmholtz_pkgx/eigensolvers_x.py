@@ -3,6 +3,7 @@ from mpi4py import MPI
 import numpy as np
 from .eigenvectors_x import normalize_eigenvector
 from .petsc4py_utils import vector_matrix_vector
+from .dolfinx_utils import info
 
 def results(E):
 
@@ -56,11 +57,9 @@ def eps_solver(A, C, target, nev, two_sided=False, print_results=False):
     E.setDimensions(nev, SLEPc.DECIDE)
     E.setTolerances(1e-15)
     E.setFromOptions()
-    if MPI.COMM_WORLD.rank == 0:
-        print("- EPS solver started.")
+    info("- EPS solver started.")
     E.solve()
-    if MPI.COMM_WORLD.rank == 0:
-            print("- EPS solver converged. Eigenvalue computed.")
+    info("- EPS solver converged. Eigenvalue computed.")
     if print_results and MPI.COMM_WORLD.rank == 0:
         results(E)
 
@@ -108,13 +107,11 @@ def pep_solver(A, B, C, target, nev, print_results=False):
     Q.setTolerances(1e-15)
     Q.setFromOptions()
 
-    if MPI.COMM_WORLD.rank == 0:
-            print("- PEP solver started.")
+    info("- PEP solver started.")
 
     Q.solve()
 
-    if MPI.COMM_WORLD.rank == 0:
-            print("- PEP solver converged. Eigenvalue computed.")
+    info("- PEP solver converged. Eigenvalue computed.")
 
     if print_results and MPI.COMM_WORLD.rank == 0:
         results(Q)
@@ -150,8 +147,7 @@ def fixed_point_iteration_pep( operators, D,  target, nev=2, i=0,
     s = int(s[-2:])
     s = "{{:+.{}f}}".format(s)
     
-    if MPI.COMM_WORLD.rank == 0:
-        print("-> Fixed point iteration started.\n")
+    info("-> Fixed point iteration started.\n")
 
     while abs(domega) > tol:
 
@@ -199,8 +195,7 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
     f = np.zeros(maxiter, dtype=complex)
     alpha = np.zeros(maxiter, dtype=complex)
 
-    if MPI.COMM_WORLD.rank == 0:
-        print("--> Fixed point iteration started.\n")
+    info("--> Fixed point iteration started.\n")
 
     E = eps_solver(A, C, target, nev, print_results=print_results)
     eig = E.getEigenvalue(i)
@@ -219,7 +214,7 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
     if MPI.COMM_WORLD.rank == 0:
         print("+ Starting eigenvalue is found: {}  {}j. ".format(
                  s.format(omega[k + 1].real), s.format(omega[k + 1].imag)))
-        print("-> Iterations are starting.\n ")
+    info("-> Iterations are starting.\n ")
     while abs(domega) > tol:
 
         k += 1

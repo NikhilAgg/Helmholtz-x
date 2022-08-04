@@ -89,7 +89,7 @@ class XDMFReader:
     def getAll(self):
         return self.mesh, self.subdomains, self.facet_tags
     
-    def getNumberofCells(self):
+    def getInfo(self):
         t_imap = self.mesh.topology.index_map(self.mesh.topology.dim)
         num_cells = t_imap.size_local + t_imap.num_ghosts
         total_num_cells = comm.allreduce(num_cells, op=MPI.SUM) #sum all cells and distribute to each process

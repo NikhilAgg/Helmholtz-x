@@ -6,7 +6,6 @@ from scipy import interpolate
 import ufl
 import numpy as np
 
-
 def interpolator(xs, ys, data, mesh):
     """Interpolates matrix data onto dolfinx grid
 
@@ -62,3 +61,7 @@ def xdmf_writer(name, mesh, function):
     with XDMFFile(MPI.COMM_WORLD, name+".xdmf", "w", encoding=XDMFFile.Encoding.HDF5 ) as xdmf:
         xdmf.write_mesh(mesh)
         xdmf.write_function(function)
+
+def info(str):
+    if MPI.COMM_WORLD.Get_rank()==0:
+        print(str)

@@ -2,6 +2,7 @@ import basix
 from dolfinx.fem  import Function, FunctionSpace, Constant, form, assemble_scalar
 from dolfinx.fem.petsc import assemble_vector
 from dolfinx.geometry import compute_collisions, compute_colliding_cells, BoundingBoxTree
+from .dolfinx_utils import info
 from mpi4py import MPI
 from ufl import Measure, TestFunction, TrialFunction, inner, as_vector, grad
 import ufl
@@ -503,8 +504,7 @@ class ActiveFlameNT:
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
 
-        if self.rank==0:
-            print("- Generating Matrix D..")
+        info("- Generating Matrix D..")
 
         mat = PETSc.Mat().create(PETSc.COMM_WORLD)
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
@@ -547,8 +547,7 @@ class ActiveFlameNT:
         self.omega = omega
         self._a = self._assemble_left_vector()
         self.assemble_submatrices(problem_type)
-        if self.rank==0:
-            print("- Matrix D is assembled.")
+        info("- Matrix D is assembled.")
 
 class ActiveFlameNT2:
 

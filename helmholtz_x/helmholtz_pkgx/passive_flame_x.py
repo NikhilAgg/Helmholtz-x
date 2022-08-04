@@ -1,8 +1,7 @@
-import dolfinx
-from dolfinx.fem import Function, FunctionSpace, dirichletbc, form
+from dolfinx.fem import Function, FunctionSpace, dirichletbc, form, locate_dofs_topological
 from dolfinx.fem.petsc import assemble_matrix
-from mpi4py import MPI
-from ufl import Measure, FacetNormal, TestFunction, TrialFunction, dx, grad, inner
+from .dolfinx_utils import info
+from ufl import Measure, TestFunction, TrialFunction, grad, inner
 from petsc4py import PETSc
 import numpy as np
 
@@ -11,7 +10,6 @@ class PassiveFlame:
     def __init__(self, mesh, facet_tags, boundary_conditions,
                  c, degree=1):
         """
-        
 
         This class defines the matrices A,B,C in
         A + wB + w^2 C = 0 for the boundary conditions that consist
@@ -25,7 +23,7 @@ class PassiveFlame:
             boundary data of the mesh
         boundary_conditions : dict
             boundary conditions for corresponding mesh.
-        c : Expression
+        c : dolfinx.fem.function.Function
             Speed of sound
         degree : int, optional
             degree of the basis functions. The default is 1.
@@ -35,10 +33,9 @@ class PassiveFlame:
         A : petsc4py.PETSc.Mat
             Matrix of Grad term
         B : petsc4py.PETSc.Mat
-            Empty Matrix
+            Matrix for Robin boundary condition
         C : petsc4py.PETSc.Mat
             Matrix of w^2 term.
-
         """
 
         self.mesh = mesh
@@ -61,10 +58,8 @@ class PassiveFlame:
         for i in boundary_conditions:
             if 'Dirichlet' in boundary_conditions[i]:
                 u_bc = Function(self.V)
-                u_bc.interpolate(lambda x:x[0]*0)
-                u_bc.x.scatter_forward()
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
-                dofs = dolfinx.fem.locate_dofs_topological(self.V, self.fdim, facets)
+                dofs = locate_dofs_topological(self.V, self.fdim, facets)
                 bc = dirichletbc(u_bc, dofs)
                 self.bcs.append(bc)
             if 'Robin' in boundary_conditions[i]:
@@ -77,8 +72,7 @@ class PassiveFlame:
         self._B_adj = None
         self._C = None
 
-        if MPI.COMM_WORLD.Get_rank()==0:
-            print("- Passive matrices are assembling..")
+        info("- Passive matrices are assembling..")
 
     @property
     def A(self):
@@ -101,7 +95,7 @@ class PassiveFlame:
         a = form(-self.c**2 * inner(grad(self.u), grad(self.v))*self.dx)
         A = assemble_matrix(a, bcs=self.bcs)
         A.assemble()
-
+        info("- Matrix A is assembled.")
         self._A = A
 
     def assemble_B(self):
@@ -110,22 +104,21 @@ class PassiveFlame:
         n = self.V.dofmap.index_map.size_local
 
         if self.integrals_R:
-
             B = assemble_matrix(form(sum(self.integrals_R)))
             B.assemble()
-
         else:
-
             B = PETSc.Mat().create()
             B.setSizes([(n, N), (n, N)])
             B.setFromOptions()
             B.setUp()
             B.assemble()
+            info("! Note: It can be faster to use EPS solver.")
 
         B_adj = B.copy()
         B_adj.transpose()
         B_adj.conjugate()
 
+        info("- Matrix B is assembled.")
         self._B = B
         self._B_adj = B_adj    
 
@@ -134,5 +127,6 @@ class PassiveFlame:
         c = form(inner(self.u , self.v) * self.dx)
         C = assemble_matrix(c, self.bcs)
         C.assemble()
+        info("- Matrix C is assembled.\n")
         self._C = C
 
