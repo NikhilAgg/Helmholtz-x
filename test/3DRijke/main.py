@@ -1,7 +1,6 @@
 import datetime
 start_time = datetime.datetime.now()
 from dolfinx.fem import Constant
-from helmholtz_x.helmholtz_pkgx.flame_transfer_function_x import n_tau
 from helmholtz_x.helmholtz_pkgx.eigensolvers_x import fixed_point_iteration_eps
 from helmholtz_x.helmholtz_pkgx.passive_flame_x import PassiveFlame
 from helmholtz_x.helmholtz_pkgx.active_flame_x import ActiveFlameNT

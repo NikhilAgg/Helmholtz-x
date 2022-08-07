@@ -444,13 +444,17 @@ class ActiveFlameNT:
 
         # Parallelization
         left_vector = self.comm.gather(left_vector, root=0)
-        if left_vector:
+        if self.rank == 0:
+            left_vector = [self._remove_repeating_dofs([item for sublist in left_vector for item in sublist])]
             left_vector = [j for i in left_vector for j in i]
+            chunks = [[] for _ in range(self.size)]
+            for i, chunk in enumerate(left_vector):
+                chunks[i % self.size].append(chunk)
         else:
-            left_vector=[]
-        left_vector = self.comm.bcast(left_vector,root=0)
-
-        left_vector = self._remove_repeating_dofs(left_vector)
+            left_vector = None
+            chunks = None
+        left_vector = self.comm.scatter(chunks, root=0)
+        
         return left_vector
 
     def _assemble_right_vector(self):
@@ -465,21 +469,18 @@ class ActiveFlameNT:
         gradient_form = form(inner(n_ref,grad(self.phi_j)) / self.rho * self.w * self.dx)
 
         right_vector = self._indices_and_values(gradient_form)
-      
-        right_vector = self.comm.gather(right_vector, root=0)
+
 
         # Parallelization
-        if self.rank == 0:
-            right_vector = [self._remove_repeating_dofs([item for sublist in right_vector for item in sublist])]
+        right_vector = self.comm.gather(right_vector, root=0)
+        if right_vector:
             right_vector = [j for i in right_vector for j in i]
-            chunks = [[] for _ in range(self.size)]
-            for i, chunk in enumerate(right_vector):
-                chunks[i % self.size].append(chunk)
         else:
-            right_vector = None
-            chunks = None
-        right_vector = self.comm.scatter(chunks, root=0)
+            right_vector=[]
+        right_vector = self.comm.bcast(right_vector,root=0)
 
+        right_vector = self._remove_repeating_dofs(right_vector)
+        
         return right_vector
 
     def assemble_submatrices(self, problem_type='direct'):
@@ -494,7 +495,8 @@ class ActiveFlameNT:
 
         row = [item[0] for item in A]
         col = [item[0] for item in B]
-        
+        # print("ROWS: ", row, "RANK: ", self.rank)
+        # print("COLS: ", col, "RANK: ", self.rank)
         row_vals = [item[1] for item in A]
         col_vals = [item[1] for item in B]
 
@@ -503,31 +505,16 @@ class ActiveFlameNT:
 
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
-
+        print("Local size:", local_size)
         info("- Generating Matrix D..")
 
         mat = PETSc.Mat().create(PETSc.COMM_WORLD)
         mat.setSizes([(local_size, global_size), (local_size, global_size)])
         mat.setType('mpiaij')
-        ONNZ = np.ones(local_size,dtype=np.int32)
         
-        # diagonal_indices = list(set(row).intersection(col))
-        # DNNZ[diagonal_indices] = 1
-        # print("DIAGONAL LEN: ", len(diagonal_indices), "Rank: ",self.rank)
-        # print("Local Size", local_size, "Rank: ",self.rank)
-        # print("LEN A:",len(row), " - MIN A", min(row)," - MAX A",max(row), " - Rank: ",self.rank)
-        # print("LEN B:",len(col), "- MIN B", min(col)," - MAX B",max(col), " - Rank: ",self.rank)
-        if self.size == 1:
-            DNNZ = np.zeros(local_size,dtype=np.int32)
-            diagonal_indices = list(set(row).intersection(col))
-            DNNZ[diagonal_indices] = 1
-            nnz_row_indices = [x for x in row if x < local_size]
-            # print("LEN NNZ_ROW: ", len(nnz_row_indices), "Rank: ",self.rank )
-            ONNZ[nnz_row_indices] = len(col)
-            mat.setPreallocationNNZ([ONNZ, DNNZ])
-        else:
-            ONNZ *= len(row)
-            mat.setPreallocationNNZ([ONNZ, ONNZ]) 
+        ONNZ = len(col)*np.ones(local_size,dtype=np.int32)
+        mat.setPreallocationNNZ([ONNZ, ONNZ])
+
         mat.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
         mat.setUp()
         mat.setValues(row, col, val, addv=PETSc.InsertMode.ADD_VALUES)

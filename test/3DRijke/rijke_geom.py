@@ -31,7 +31,7 @@ def add_elementary_entities():
 
     
     R = 0.047/2
-    lc = 4e-3
+    lc = 3e-3
     
     L_flame_start = 0.225
     L_flame_end   = 0.275
