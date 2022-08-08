@@ -8,7 +8,7 @@ The nonlinear eigenproblem is solving using PETSc, SLEPc and FeniCS libraries. T
 $$ A\textbf{P} + \omega B\textbf{P} + \omega^2C\textbf{P} = D(\omega)\textbf{P} $$
 
 where 
-$P$ is eigenvector, $\omega$ is eigenvalue ($\omega$ / (2 $\pi$) is eigenfrequency) and the discretized matrices are;
+$P$ is eigenvector, $\omega$ is eigenvalue ( $\omega$ / (2 $\pi$ ) is eigenfrequency) and the discretized matrices are;
 
 $$ A_{jk} = -\int_\Omega c^2\nabla \phi_j \cdot\nabla \phi_k dx   $$
 
