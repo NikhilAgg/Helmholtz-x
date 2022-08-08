@@ -7,9 +7,9 @@ The nonlinear eigenproblem is solving using PETSc, SLEPc and FeniCS libraries. T
 
 $$ A_{jk} = -\int_\Omega c^2\nabla \phi_j \cdot\nabla \phi_k dx   $$
 
-$$ B_{jk} &= \int_{\partial \Omega} \left( \frac{  ic}{Z}\right)  \phi_j\phi_k d{\sigma}   $$
+$$ B_{jk} = \int_{\partial \Omega} \left( \frac{  ic}{Z}\right)  \phi_j\phi_k d{\sigma}   $$
 
-$$ C_{jk} &= \int_\Omega\phi_j\phi_k\ dx   $$
+$$ C_{jk} = \int_\Omega\phi_j\phi_k\ dx   $$
 
 
 
