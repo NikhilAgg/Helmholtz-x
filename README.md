@@ -1,2 +1,2 @@
 # Helmholtz-x
-The complex number version of Helmholtz Solver
+The complex number version of Helmholtz Solver.
