@@ -3,7 +3,11 @@ This python library implements the complex number version of Helmholtz Solver us
 
 It is using extensive parallelization with handled preallocations for generation of nonlinear part of the thermoacoustic Helmlholtz equation.
 
-The nonlinear eigenproblem is solving using PETSc, SLEPc and FeniCS libraries. The discretized matrices are;
+The nonlinear eigenproblem is solving using PETSc, SLEPc and FeniCS libraries. The thermoacoustic Helmholtz equation reads;
+
+$$ A\textbf{P} + \omega B\textbf{P} + \omega^2C\textbf{P} = D(\omega)\textbf{P} $$
+
+where $textbf{P}$ is eigenvector, $\omega$ is eigenvalue ($\omega / (2 \pi)$ is eigenfrequency) and the discretized matrices are;
 
 $$ A_{jk} = -\int_\Omega c^2\nabla \phi_j \cdot\nabla \phi_k dx   $$
 
