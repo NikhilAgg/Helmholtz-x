@@ -1,5 +1,6 @@
  # this file ignores the files with the extensions below;
- 
+*/*/*/*/*/__pycache__/
+*/*/*/*/__pycache__/
 */*/*/__pycache__/
 */*/__pycache__/
 */__pycache__/
