@@ -495,8 +495,6 @@ class ActiveFlameNT:
 
         row = [item[0] for item in A]
         col = [item[0] for item in B]
-        # print("ROWS: ", row, "RANK: ", self.rank)
-        # print("COLS: ", col, "RANK: ", self.rank)
         row_vals = [item[1] for item in A]
         col_vals = [item[1] for item in B]
 
@@ -505,7 +503,7 @@ class ActiveFlameNT:
 
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
-        print("Local size:", local_size)
+
         info("- Generating Matrix D..")
 
         mat = PETSc.Mat().create(PETSc.COMM_WORLD)
@@ -622,7 +620,7 @@ class ActiveFlameNT2:
 
     def _assemble_left_vector(self):
 
-        from helmholtz_x.helmholtz_pkgx.parameters_utils import Q_uniform, n_bump
+        from helmholtz_x.parameters_utils import Q_uniform, n_bump
 
         q_uniform = Q_uniform(self.mesh, self.subdomains, self.Q)
         q_tot = n_bump(self.mesh, self.x_f, self.a_f, q_uniform.value)
@@ -770,15 +768,12 @@ class ActiveFlameNT3:
 
         exp_tau = ufl.exp(1j*self.omega*self.tau)
 
-
         if self.dimension == 1:
             n_ref = as_vector([1])
         elif self.dimension == 2:
             n_ref = as_vector([1,0])
         else:
             n_ref = as_vector([0,0,1])
-        
-        
 
         total_form = form(coefficient *  self.phi_i * self.h * self.n * exp_tau *  inner(n_ref,grad(self.phi_j) / self.rho * self.w) * self.dx )
 
@@ -796,7 +791,6 @@ class ActiveFlameNT3:
 
         return D
 
-    
 
     def assemble_matrix(self, omega, problem_type='direct'):
         self.omega.value = omega
