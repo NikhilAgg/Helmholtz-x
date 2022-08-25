@@ -72,8 +72,8 @@ def add_elementary_entities(**kwargs):
               'R_out_cc': .2,
               'l_cc': .2,
               'l_ec': 0.041,
-              'lc_1': 1e-1,
-              'lc_2': 2e-2
+              'lc_1': 4e-3,
+              'lc_2': 4e-3
               }
 
     # Loop for changing default mesh parameters by taken keyword argument(dict)
@@ -519,5 +519,6 @@ def fltk_options():
     # gmsh.option.setNumber("Mesh.VolumeFaces", 0)
 
 if __name__ == '__main__':
-
-    geom_1('MeshDir/micca_flame', fltk=True, l_ec=0.041)
+    from helmholtz_x.dolfinx_utils import write_xdmf_mesh
+    geom_1('MeshDir/Micca', fltk=False, l_ec=0.041)
+    write_xdmf_mesh("MeshDir/Micca",dimension=3)

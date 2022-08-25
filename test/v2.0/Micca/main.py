@@ -61,6 +61,7 @@ write_xdmf_mesh("MeshDir/Micca",dimension=3)
 
 Micca = XDMFReader("MeshDir/Micca")
 mesh, subdomains, facet_tags = Micca.getAll()
+Micca.getInfo()
 # Read mesh 
 # mesh, subdomains, facet_tags = read_from_msh("MeshDir/Micca.msh", cell_data=True, facet_data=True, gdim=3)
 
@@ -110,6 +111,8 @@ print("Direct Eigenvalues -> ", omega_1," =? ", omega_2)
 # Save eigenvectors
 xdmf_writer("Results/p_1", mesh, p_1)
 xdmf_writer("Results/p_2", mesh, p_2)
+
+print("Total Execution Time for Direct Modes: ", datetime.datetime.now()-start_time)
 
 # ________________________________________________________________________________
 

@@ -4,7 +4,7 @@ from dolfinx.fem import Constant
 from helmholtz_x.eigensolvers_x import fixed_point_iteration_eps
 from helmholtz_x.passive_flame_x import PassiveFlame
 from helmholtz_x.active_flame_x import ActiveFlameNT
-from helmholtz_x.eigenvectors_x import normalize_eigenvector
+from helmholtz_x.eigenvectors_x import normalize_eigenvector, normalize_unit
 from helmholtz_x.parameters_utils import rho,tau_linear,h,w
 from helmholtz_x.dolfinx_utils import XDMFReader, xdmf_writer 
 from petsc4py import PETSc
@@ -49,6 +49,9 @@ E = fixed_point_iteration_eps(matrices, D, target**2, nev=2, i=0, print_results=
 omega, p = normalize_eigenvector(mesh, E, 0, degree=degree, which='right')
 
 xdmf_writer("Results/p", mesh, p)
+
+p_normalized = normalize_unit(p)
+xdmf_writer("Results/p_normalized", mesh, p_normalized)
 
 if MPI.COMM_WORLD.rank == 0:
     print("Total Execution Time: ", datetime.datetime.now()-start_time)

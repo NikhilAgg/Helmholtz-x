@@ -55,6 +55,11 @@ def w(mesh, x_r, a_r, degree=1):
     elif mesh.geometry.dim == 3:
         x_r = x_r[0][2]
         w.interpolate(lambda x: gaussian3D(x,x_r,a_r))
+    
+    normalizer = assemble_scalar(form(w*dx))
+    w.x.array[:] /= normalizer
+    w.x.scatter_forward()
+    
     return w
 
 def h(mesh, x_f, a_f, degree=1):

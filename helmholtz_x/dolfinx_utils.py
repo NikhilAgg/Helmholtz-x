@@ -1,5 +1,6 @@
 from dolfinx.fem import Function, FunctionSpace, form, locate_dofs_topological
 from dolfinx.fem.assemble import assemble_scalar
+from dolfinx.mesh import meshtags
 from dolfinx.io import XDMFFile
 from mpi4py import MPI
 from scipy import interpolate
@@ -71,7 +72,7 @@ def interpolator(xs, ys, data, mesh):
     dolf_function = Function(V)
     dolf_function.x.array[:] = new_data
     dolf_function.x.scatter_forward()
-    print("Interpolation is done.")
+    info("Interpolation is done.")
     return dolf_function
 
 def normalize(func):
@@ -268,3 +269,21 @@ def derivatives_visualizer(filename, shape_derivatives, geometry, normalize=True
     with XDMFFile(MPI.COMM_WORLD, filename+".xdmf", "w") as xdmf:
         xdmf.write_mesh(geometry.mesh)
         xdmf.write_function(U)
+
+def ParallelMeshVisualizer(filename):
+    """This function visualizes the paralel mesh partittion. 
+       XDMFReaderT should be used in paraview to read ranktags.
+    Args:
+        filename (str): Path of the mesh file
+    """
+    Geometry = XDMFReader(filename)
+    mesh, subdomains, facet_tags = Geometry.getAll()
+
+    #mesh = create_unit_square(MPI.COMM_WORLD, 10, 10)
+
+    num_cells_local = mesh.topology.index_map(mesh.topology.dim).size_local
+    mt = meshtags(mesh, mesh.topology.dim, np.arange(num_cells_local, dtype=np.int32), np.full(num_cells_local, mesh.comm.rank, dtype=np.int32))
+
+    with XDMFFile(mesh.comm, "Ranks.xdmf", "w") as xdmf:
+        xdmf.write_mesh(mesh)
+        xdmf.write_meshtags(mt)

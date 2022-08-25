@@ -33,10 +33,6 @@ R_out = - 0.975 - 0.05j  # [/]
 Z_in = (1 + R_in)/(1 - R_in)
 Z_out = (1 + R_out)/(1 - R_out)
 
-# Specific admittance
-
-Y_in = 1/Z_in
-Y_out = 1/Z_out
 
 # ------------------------------------------------------------
 # Flame transfer function

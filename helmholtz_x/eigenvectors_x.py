@@ -5,6 +5,7 @@ from dolfinx.fem import ( Function, FunctionSpace, form)
 from ufl import dx
 from .petsc4py_utils import multiply, vector_matrix_vector, matrix_vector
 from mpi4py import MPI
+from petsc4py import PETSc
 
 def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     """ 
@@ -108,3 +109,21 @@ def normalize_adjoint(omega_dir, p_dir, p_adj, matrices, D=None):
     p_adj1.x.scatter_forward()
 
     return p_adj1
+
+def normalize_unit(P):
+
+    x = P.vector
+    comm = x.getComm()
+    rank = comm.getRank()
+    n = 1 if rank == 0 else 0
+    aux = PETSc.Vec().createMPI((n, PETSc.DECIDE), comm=comm)
+    if rank == 0: aux[0] = x[0]
+    aux.assemble()
+    x0 = aux.sum()
+    print(x0)
+    sign = x0/abs(x0)
+    x.scale(1.0/sign)
+
+    P.x.array[:] = x.array[:]
+
+    return P

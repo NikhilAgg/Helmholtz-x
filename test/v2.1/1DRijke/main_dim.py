@@ -9,7 +9,7 @@ import matplotlib.pyplot as plt
 from helmholtz_x.eigensolvers_x import fixed_point_iteration_pep
 from helmholtz_x.passive_flame_x import PassiveFlame
 from helmholtz_x.active_flame_x import ActiveFlameNT
-from helmholtz_x.eigenvectors_x import normalize_eigenvector
+from helmholtz_x.eigenvectors_x import normalize_eigenvector, normalize_unit
 from helmholtz_x.dolfinx_utils import xdmf_writer
 from petsc4py import PETSc
 import params_dim
@@ -85,6 +85,10 @@ E = fixed_point_iteration_pep(matrices, D, target, nev=2, i=0, print_results= Fa
 omega, uh = normalize_eigenvector(mesh, E, 0, degree=degree, which='right')
 
 xdmf_writer("Results/p", mesh, uh)
+
+uh_normalized = normalize_unit(uh)
+xdmf_writer("Results/p_normalized", mesh, uh_normalized)
+
 if MPI.COMM_WORLD.rank == 0:
     print(f"Eigenfrequency ->  {omega/(2*np.pi):.3f}")
 
