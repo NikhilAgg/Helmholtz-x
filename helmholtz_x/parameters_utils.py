@@ -1,4 +1,5 @@
 from dolfinx.fem import FunctionSpace, Function, form, Constant, assemble_scalar
+from .dolfinx_utils import normalize
 from petsc4py import PETSc
 from mpi4py import MPI
 import numpy as np
@@ -18,6 +19,11 @@ def gaussian3D(x,x_ref,sigma):
     first_term = 1/(sigma*np.sqrt(2*np.pi))
     second_term = np.exp(-1/2*((x[2]-x_ref)/(sigma))**2)
     return first_term*second_term
+
+def gaussianCroci(x,x_ref,tightness):
+    x_term = -tightness*(x[0]-x_ref[0][0])**2
+    y_term = -tightness*(abs(x[1])-x_ref[0][1])**2 # abs() can be add
+    return np.exp(x_term + y_term)
 
 def density(x, x_f, sigma, rho_d, rho_u):
     return rho_u + (rho_d-rho_u)/2*(1+np.tanh((x-x_f)/(sigma)))
@@ -56,11 +62,19 @@ def w(mesh, x_r, a_r, degree=1):
         x_r = x_r[0][2]
         w.interpolate(lambda x: gaussian3D(x,x_r,a_r))
     
-    normalizer = assemble_scalar(form(w*dx))
-    w.x.array[:] /= normalizer
-    w.x.scatter_forward()
-    
     return w
+
+def w_croci(mesh, x_ref, tightness, degree=1):
+    V = FunctionSpace(mesh, ("CG", degree))
+    w = Function(V)
+
+    if mesh.geometry.dim == 2 :
+        w.interpolate(lambda x: gaussianCroci(x,x_ref,tightness))
+    else:
+        ValueError("Only 2D cases can be implemented.")
+    
+    w_normalized = normalize(w)
+    return w_normalized
 
 def h(mesh, x_f, a_f, degree=1):
     V = FunctionSpace(mesh, ("CG", degree))

@@ -500,6 +500,7 @@ class ActiveFlameNT:
 
         product = np.outer(row_vals,col_vals)
         val = product.flatten()
+        
 
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local
