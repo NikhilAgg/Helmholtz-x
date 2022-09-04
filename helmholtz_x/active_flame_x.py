@@ -430,15 +430,18 @@ class ActiveFlameNT:
                 keep.append((ind, value))
         return keep
 
-    def _assemble_left_vector(self):
+    def _assemble_left_vector(self, Derivative=False):
 
         volume_form = form(Constant(self.mesh, PETSc.ScalarType(1))*self.dx)
         V_domain = MPI.COMM_WORLD.allreduce(assemble_scalar(volume_form), op=MPI.SUM)
         q_tot = Constant(self.mesh, (PETSc.ScalarType(self.Q_tot/V_domain)))
 
-        coefficient = (self.gamma - 1) * q_tot / self.U_bulk
+        coefficient = (self.gamma - 1) # * q_tot / self.U_bulk
 
-        form_to_assemble = form(coefficient *  self.phi_i * self.h * self.n * ufl.exp(1j*self.omega*self.tau)  *  self.dx)
+        if Derivative == False:
+            form_to_assemble = form(coefficient *  self.phi_i  * self.n * self.h * ufl.exp(1j*self.omega*self.tau)  *  self.dx)
+        else:
+            form_to_assemble = form(coefficient *  1j * self.tau * self.phi_i * self.h * self.n * ufl.exp(1j*self.omega*self.tau)  *  self.dx)
 
         left_vector = self._indices_and_values(form_to_assemble)
 
@@ -535,6 +538,12 @@ class ActiveFlameNT:
         self.assemble_submatrices(problem_type)
         info("- Matrix D is assembled.")
 
+    def get_derivative(self, omega, problem_type='direct'):
+        self.omega = omega
+        self._a = self._assemble_left_vector(Derivative=True)
+        self.assemble_submatrices(problem_type)
+        info("- Derivative of D is assembled.")
+        return self._D
 class ActiveFlameNT2:
 
     def __init__(self, mesh, subdomains, w, h, rho, Q, U, n, tau,x_f,a_f , degree=1):
