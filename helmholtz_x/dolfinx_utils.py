@@ -1,7 +1,7 @@
 from dolfinx.fem import Function, FunctionSpace, form, locate_dofs_topological
 from dolfinx.fem.assemble import assemble_scalar
 from dolfinx.mesh import meshtags
-from dolfinx.io import XDMFFile
+from dolfinx.io import XDMFFile, VTXWriter
 from mpi4py import MPI
 from scipy import interpolate
 import ufl
@@ -48,6 +48,21 @@ def dict_loader(filename, extension = ".txt"):
     if MPI.COMM_WORLD.rank==0:
         print(filename+extension, " is loaded.")
     return data
+
+def cyl2cart(rho, phi, zeta):
+    # cylindrical to Cartesian
+    x = rho * np.cos(phi)
+    y = rho * np.sin(phi)
+    z = zeta
+    return x, y, z
+
+
+def cart2cyl(x, y, z):
+    # cylindrical to Cartesian
+    rho = np.sqrt(x**2 + y**2)
+    phi = np.arctan2(y, x)
+    zeta = z
+    return rho, phi, zeta
 
 def interpolator(xs, ys, data, mesh):
     """Interpolates matrix data onto dolfinx grid
@@ -105,7 +120,17 @@ def xdmf_writer(name, mesh, function):
         xdmf.write_mesh(mesh)
         xdmf.write_function(function)
 
+def vtx_writer(name, mesh, function):
+    """ writes functions into xdmf file
 
+    Args:
+        name (string): name of the file
+        mesh (dolfinx.mesh.Mesh]): Dolfinx mesh
+        function (dolfinx.fem.function.Function): Dolfinx function to be saved.
+    """
+    with VTXWriter(mesh.comm, name+".bp", function) as vtx:
+        vtx.write(0.0)
+        
 
 def create_mesh(mesh, cell_type, prune_z):
     """Subroutine for mesh creation by using meshio library

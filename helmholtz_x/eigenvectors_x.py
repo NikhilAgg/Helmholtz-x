@@ -1,7 +1,7 @@
 from dolfinx.fem.assemble import assemble_scalar
 import numpy as np
 from slepc4py import SLEPc
-from dolfinx.fem import ( Function, FunctionSpace, form)
+from dolfinx.fem import Function, FunctionSpace, form
 from ufl import dx
 from .petsc4py_utils import multiply, vector_matrix_vector, matrix_vector
 from mpi4py import MPI
@@ -24,7 +24,7 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
 
     A = obj.getOperators()[0]
     vr, vi = A.createVecs()
-
+    
     if isinstance(obj, SLEPc.EPS):
         eig = obj.getEigenvalue(i)
         omega = np.sqrt(eig)
@@ -32,7 +32,7 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
             obj.getEigenvector(i, vr, vi)
         elif which == 'left':
             obj.getLeftEigenvector(i, vr, vi)
-
+    
     elif isinstance(obj, SLEPc.PEP):
         eig = obj.getEigenpair(i, vr, vi)
         omega = eig
