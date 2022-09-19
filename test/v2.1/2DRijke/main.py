@@ -5,7 +5,7 @@ from helmholtz_x.eigensolvers_x import fixed_point_iteration_eps
 from helmholtz_x.passive_flame_x import PassiveFlame
 from helmholtz_x.active_flame_x import ActiveFlameNT
 from helmholtz_x.eigenvectors_x import normalize_eigenvector, normalize_unit
-from helmholtz_x.parameters_utils import rho,tau_linear,h,w
+from helmholtz_x.parameters_utils import rho,tau_linear,h,gaussianFunction
 from helmholtz_x.dolfinx_utils import XDMFReader, xdmf_writer 
 from petsc4py import PETSc
 from mpi4py import MPI
@@ -34,7 +34,7 @@ A = matrices.A
 C = matrices.C
 
 rho = rho(mesh, params.x_f, params.a_f, params.rho_d, params.rho_u)
-w = w(mesh, params.x_r, params.a_r)
+w = gaussianFunction(mesh, params.x_r, params.a_r)
 h = h(mesh, params.x_f, params.a_f)
 
 n = params.n_2D

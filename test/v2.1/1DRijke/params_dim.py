@@ -1,7 +1,7 @@
 from math import *
 import numpy as np
 from dolfinx.fem import Function,FunctionSpace
-from helmholtz_x.parameters_utils import c_DG, rho,tau_linear,h,w,Q, Q_uniform, n_bump
+from helmholtz_x.parameters_utils import c_DG, rho,tau_linear,h,gaussianFunction,Q, Q_uniform, n_bump
 
 # ------------------------------------------------------------
 
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     mesh = dolfinx.mesh.create_unit_interval(MPI.COMM_WORLD, 200)
     V = FunctionSpace(mesh, ("CG", 1))
 
-    w_plot = w(mesh, x_r, a_r)
+    w_plot = gaussianFunction(mesh, x_r, a_r)
     plt.plot(mesh.geometry.x, w_plot.x.array.real)
     plt.ylabel("w")
     plt.savefig("Results/w.png")

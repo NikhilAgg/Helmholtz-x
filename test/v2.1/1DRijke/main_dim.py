@@ -72,7 +72,7 @@ n = params_dim.n_1D
 tau = params_dim.tau_linear(mesh,params_dim.x_f, params_dim.a_f, params_dim.tau_u, params_dim.tau_d, degree=degree)
 
 rho = params_dim.rho(mesh, params_dim.x_f, params_dim.a_f, params_dim.rho_d, params_dim.rho_u)
-w = params_dim.w(mesh, params_dim.x_r, params_dim.a_r)
+w = params_dim.gaussianFunction(mesh, params_dim.x_r, params_dim.a_r)
 h = params_dim.h(mesh, params_dim.x_f, params_dim.a_f)
 
 target = 200 * 2 * np.pi # 150 * 2 * np.pi

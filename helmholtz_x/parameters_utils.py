@@ -16,9 +16,11 @@ def gaussian2D(x, x_ref, sigma):
     return first_term*second_term
 
 def gaussian3D(x,x_ref,sigma):
-    first_term = 1/(sigma*np.sqrt(2*np.pi))
-    second_term = np.exp(-1/2*((x[2]-x_ref)/(sigma))**2)
-    return first_term*second_term
+    # https://math.stackexchange.com/questions/434629/3-d-generalization-of-the-gaussian-point-spread-function
+    N = 1/(sigma**3*(2*np.pi)**(3/2))
+    spatials = (x[0]-x_ref[0])**2 + (x[1]-x_ref[1])**2 + (x[2]-x_ref[2])**2
+    exp = np.exp(-spatials/(2*sigma**2))
+    return N*exp
 
 def gaussianCroci(x,x_ref,tightness):
     x_term = -tightness*(x[0]-x_ref[0][0])**2
@@ -47,7 +49,7 @@ def rho_ideal(mesh, temperature, P_amb, R):
     density.x.scatter_forward()
     return density
 
-def w(mesh, x_r, a_r, degree=1):
+def gaussianFunction(mesh, x_r, a_r, degree=1):
     V = FunctionSpace(mesh, ("CG", degree))
     w = Function(V)
     # x = V.tabulate_dof_coordinates()
@@ -58,10 +60,12 @@ def w(mesh, x_r, a_r, degree=1):
         # w.interpolate(lambda x: gaussian2D(x,x_r,a_r))
         x_r = x_r[0][0]
         w.interpolate(lambda x: gaussian(x,x_r,a_r))
+    # elif mesh.geometry.dim == 3:
+    #     x_r = x_r[0][2]
+    #     w.interpolate(lambda x: gaussian3D(x,x_r,a_r))
     elif mesh.geometry.dim == 3:
-        x_r = x_r[0][2]
         w.interpolate(lambda x: gaussian3D(x,x_r,a_r))
-    
+    w = normalize(w)
     return w
 
 def w_croci(mesh, x_ref, tightness, degree=1):

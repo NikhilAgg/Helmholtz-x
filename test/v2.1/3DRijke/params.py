@@ -9,7 +9,7 @@ out ~ outlet, same as d ~ downstream (of the flame)
 from math import *
 import numpy as np
 from dolfinx.fem import Function,FunctionSpace
-from helmholtz_x.parameters_utils import c_DG, rho,tau_linear,h,w
+from helmholtz_x.parameters_utils import c_DG, rho,tau_linear,h,gaussianFunction
 
 r = 287.  # [J/kg/K]
 gamma = 1.4  # [/]
@@ -70,7 +70,7 @@ if __name__ == '__main__':
     mesh, subdomains, facet_tags = RijkeTube3D.getAll()
 
     rho_func = rho(mesh, x_f, a_f, rho_d, rho_u)
-    w_func = w(mesh, x_r, a_r)
+    w_func = gaussianFunction(mesh, x_r, a_r)
     h_func = h(mesh, x_f, a_f)
     
     c_func = c_DG(mesh, x_f, c_in, c_out)
