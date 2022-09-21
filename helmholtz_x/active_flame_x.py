@@ -996,6 +996,7 @@ class ActiveFlameRR:
         self.omega = omega
         self._a = self._assemble_left_vector()
         self.assemble_submatrices(problem_type)
+        del self._a
         info("- Matrix D is assembled.")
 
     def get_derivative(self, omega, problem_type='direct'):

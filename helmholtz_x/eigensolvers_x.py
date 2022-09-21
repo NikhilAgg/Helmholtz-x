@@ -199,7 +199,9 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
 
     E = eps_solver(A, C, target, nev, print_results=print_results)
     eig = E.getEigenvalue(i)
-
+    
+    
+    
     omega[0] = np.sqrt(eig)
     alpha[0] = 0.5
 
@@ -218,6 +220,7 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
     while abs(domega) > tol:
 
         k += 1
+        del E
         if MPI.COMM_WORLD.rank == 0:
             print("* iter = {:2d}".format(k+1))
 
@@ -227,18 +230,20 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
             D_Mat = D.adjoint_matrix
 
         if not B:
-            nlinA = A - D_Mat
+            D_Mat = A - D_Mat
         else:
-            nlinA = A + (omega[k] * B) - D_Mat
+            D_Mat = A + (omega[k] * B) - D_Mat
 
-        E = eps_solver(nlinA, C, target, nev, two_sided=two_sided, print_results=print_results)
+        
+        E = eps_solver(D_Mat, C, target, nev, two_sided=two_sided, print_results=print_results)
+        del D_Mat
         eig = E.getEigenvalue(i)
 
         f[k] = np.sqrt(eig)
 
         if k != 0:
             alpha[k] = 1/(1 - ((f[k] - f[k-1])/(omega[k] - omega[k-1])))
-
+            
         omega[k+1] = alpha[k] * f[k] + (1 - alpha[k]) * omega[k]
 
         domega = omega[k+1] - omega[k]
