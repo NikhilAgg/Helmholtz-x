@@ -56,16 +56,39 @@ class PassiveFlame:
         self.bcs = []
         self.integrals_R = []
         for i in boundary_conditions:
+            gamma = 1.33
+            M_i = -0.10 
+            M_o = 1.0
             if 'Dirichlet' in boundary_conditions[i]:
                 u_bc = Function(self.V)
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
                 dofs = locate_dofs_topological(self.V, self.fdim, facets)
                 bc = dirichletbc(u_bc, dofs)
                 self.bcs.append(bc)
+
             if 'Robin' in boundary_conditions[i]:
-                Z = boundary_conditions[i]['Robin']
-                integral_R = 1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
-                self.integrals_R.append(integral_R) 
+                R = boundary_conditions[i]['Robin']
+                Z = (1+R)/(1-R)
+                integrals_Impedance = 1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
+                self.integrals_R.append(integrals_Impedance)   
+
+            if 'InletChoked' in boundary_conditions[i]:
+                print("InletChoked BC is working")
+                integral_C_i = -1j * M_i * c * inner(self.u, self.v) * self.ds(i)
+                self.integrals_R.append(integral_C_i) 
+                # u_bc = Function(self.V)
+                # u_bc.x.array[:] = 1.0
+                # u_bc.x.scatter_forward()
+                # facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
+                # dofs = locate_dofs_topological(self.V, self.fdim, facets)
+                # bc = dirichletbc(u_bc, dofs)
+                # self.bcs.append(bc)
+
+            if 'OutletChoked' in boundary_conditions[i]:
+                print("OutletChoked BC is working")
+                # integral_C_o = 1j*(gamma-1)*M_o*c/2 * inner(self.u, self.v) * self.ds(i)
+                integral_C_o = 1j*(gamma)*340/2 * inner(self.u, self.v) * self.ds(i)
+                self.integrals_R.append(integral_C_o) 
 
         self._A = None
         self._B = None

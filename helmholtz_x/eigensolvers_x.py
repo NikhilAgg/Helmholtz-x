@@ -152,6 +152,7 @@ def fixed_point_iteration_pep( operators, D,  target, nev=2, i=0,
     while abs(domega) > tol:
 
         k += 1
+        del E
         if MPI.COMM_WORLD.rank == 0:
             print("* iter = {:2d}".format(k+1))
         D.assemble_matrix(omega[k], problem_type)
@@ -159,9 +160,9 @@ def fixed_point_iteration_pep( operators, D,  target, nev=2, i=0,
         if problem_type == 'adjoint':
             D_Mat = D.adjoint_matrix
 
-        nlinA = A - D_Mat
+        D_Mat = A - D_Mat
 
-        E = pep_solver(nlinA, B, C, target, nev, print_results=print_results)
+        E = pep_solver(D_Mat, B, C, target, nev, print_results=print_results)
         
         eig = E.getEigenpair(i, vr, vi)
         f[k] = eig
@@ -199,8 +200,6 @@ def fixed_point_iteration_eps(operators, D, target, nev=2, i=0,
 
     E = eps_solver(A, C, target, nev, print_results=print_results)
     eig = E.getEigenvalue(i)
-    
-    
     
     omega[0] = np.sqrt(eig)
     alpha[0] = 0.5

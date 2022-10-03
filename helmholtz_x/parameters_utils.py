@@ -165,7 +165,10 @@ def c_DG(mesh, x_f, c_u, c_d):
 def sound_speed(mesh, temperature):
     V = FunctionSpace(mesh, ("DG", 0))
     c = Function(V)
-    c.x.array[:] =  20.05 * np.sqrt(temperature.x.array)
+    if isinstance(temperature, Function):
+        c.x.array[:] =  20.05 * np.sqrt(temperature.x.array)
+    else:
+        c.x.array[:] =  20.05 * np.sqrt(temperature)
     c.x.scatter_forward()
     return c
 
