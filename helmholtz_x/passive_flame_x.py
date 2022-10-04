@@ -1,10 +1,11 @@
-from dolfinx.fem import Function, FunctionSpace, dirichletbc, form, locate_dofs_topological
+from dolfinx.fem import Constant, Function, FunctionSpace, dirichletbc, form, locate_dofs_topological, assemble_scalar
 from dolfinx.fem.petsc import assemble_matrix
+# from dolfinx.fem.assemble import 
 from .dolfinx_utils import info
 from ufl import Measure, TestFunction, TrialFunction, grad, inner
 from petsc4py import PETSc
 import numpy as np
-
+from mpi4py import MPI
 class PassiveFlame:
 
     def __init__(self, mesh, facet_tags, boundary_conditions,
@@ -56,9 +57,9 @@ class PassiveFlame:
         self.bcs = []
         self.integrals_R = []
         for i in boundary_conditions:
-            gamma = 1.33
+            gamma = 1.4
             M_i = -0.10 
-            M_o = 1.0
+            M_o = 0.165
             if 'Dirichlet' in boundary_conditions[i]:
                 u_bc = Function(self.V)
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
@@ -86,8 +87,24 @@ class PassiveFlame:
 
             if 'OutletChoked' in boundary_conditions[i]:
                 print("OutletChoked BC is working")
-                # integral_C_o = 1j*(gamma-1)*M_o*c/2 * inner(self.u, self.v) * self.ds(i)
-                integral_C_o = 1j*(gamma)*340/2 * inner(self.u, self.v) * self.ds(i)
+                area_integral = Constant(self.mesh, PETSc.ScalarType(1))
+                area_outlet = MPI.COMM_WORLD.allreduce(assemble_scalar(form(area_integral * self.ds(i))), op=MPI.SUM)
+                print("Outlet Area: ", area_outlet)
+                # m = \rho * A * U
+                # U = m / (\rho*A)
+                
+                # P = \rho R T
+                # \rho = P/(R * T)
+                m = 100 # kg/s
+                P = 50e5 # Pa
+                R = 287 # J/(kg.K)
+                T = 1000 #K
+                rho = P/(R*T)
+                print("Rho:", rho)
+                U = m/(rho*area_outlet)
+                print("Mean velocity at outlet", U)
+                integral_C_o = 1j*(gamma-1)*M_o*c/2 * inner(self.u, self.v) * self.ds(i)
+                # integral_C_o = 1j*(gamma-1)*U/2 * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_C_o) 
 
         self._A = None

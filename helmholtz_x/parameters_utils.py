@@ -1,4 +1,5 @@
 from dolfinx.fem import FunctionSpace, Function, form, Constant, assemble_scalar
+import ufl
 from .dolfinx_utils import normalize
 from petsc4py import PETSc
 from mpi4py import MPI
@@ -163,12 +164,19 @@ def c_DG(mesh, x_f, c_u, c_d):
     return c
 
 def sound_speed(mesh, temperature):
+    # https://www.engineeringtoolbox.com/air-speed-sound-d_603.html
     V = FunctionSpace(mesh, ("DG", 0))
     c = Function(V)
     if isinstance(temperature, Function):
         c.x.array[:] =  20.05 * np.sqrt(temperature.x.array)
     else:
-        c.x.array[:] =  20.05 * np.sqrt(temperature)
+        # c.x.array[:] =  20.05 * np.sqrt(temperature)
+        cp = Function(V)
+        cv = Function(V)
+        r_gas = 287.1
+        cp.x.array[:] = 973.60091+0.1333*temperature
+        cv.x.array[:] = cp.x.array - r_gas
+        c.x.array[:] = np.sqrt(cp.x.array/cv.x.array*r_gas*temperature)
     c.x.scatter_forward()
     return c
 
