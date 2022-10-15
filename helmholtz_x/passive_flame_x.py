@@ -57,9 +57,7 @@ class PassiveFlame:
         self.bcs = []
         self.integrals_R = []
         for i in boundary_conditions:
-            gamma = 1.4
-            M_i = -0.10 
-            M_o = 0.165
+            gamma = 1.35
             if 'Dirichlet' in boundary_conditions[i]:
                 u_bc = Function(self.V)
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
@@ -73,38 +71,22 @@ class PassiveFlame:
                 integrals_Impedance = 1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integrals_Impedance)   
 
-            if 'InletChoked' in boundary_conditions[i]:
+            if 'ChokedInlet' in boundary_conditions[i]:
+                # https://www.oscilos.com/download/OSCILOS_Long_Tech_report.pdf
+                M1 = boundary_conditions[i]['ChokedInlet']
                 print("InletChoked BC is working")
-                integral_C_i = -1j * M_i * c * inner(self.u, self.v) * self.ds(i)
+                R = (1-gamma*M1/(1+(gamma-1)*M1**2))/(1+gamma*M1/(1+(gamma-1)*M1**2))
+                Z = (1+R)/(1-R)
+                integral_C_i = 2*np.pi*1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_C_i) 
-                # u_bc = Function(self.V)
-                # u_bc.x.array[:] = 1.0
-                # u_bc.x.scatter_forward()
-                # facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
-                # dofs = locate_dofs_topological(self.V, self.fdim, facets)
-                # bc = dirichletbc(u_bc, dofs)
-                # self.bcs.append(bc)
 
-            if 'OutletChoked' in boundary_conditions[i]:
-                print("OutletChoked BC is working")
-                area_integral = Constant(self.mesh, PETSc.ScalarType(1))
-                area_outlet = MPI.COMM_WORLD.allreduce(assemble_scalar(form(area_integral * self.ds(i))), op=MPI.SUM)
-                print("Outlet Area: ", area_outlet)
-                # m = \rho * A * U
-                # U = m / (\rho*A)
-                
-                # P = \rho R T
-                # \rho = P/(R * T)
-                m = 100 # kg/s
-                P = 50e5 # Pa
-                R = 287 # J/(kg.K)
-                T = 1000 #K
-                rho = P/(R*T)
-                print("Rho:", rho)
-                U = m/(rho*area_outlet)
-                print("Mean velocity at outlet", U)
-                integral_C_o = 1j*(gamma-1)*M_o*c/2 * inner(self.u, self.v) * self.ds(i)
-                # integral_C_o = 1j*(gamma-1)*U/2 * inner(self.u, self.v) * self.ds(i)
+            if 'ChokedOutlet' in boundary_conditions[i]:
+                # https://www.oscilos.com/download/OSCILOS_Long_Tech_report.pdf
+                Mach = boundary_conditions[i]['ChokedOutlet']
+                print("ChokedOutlet BC is working")
+                R = R = (1-0.5*(gamma-1)*Mach)/(1+0.5*(gamma-1)*Mach)
+                Z = (1+R)/(1-R)
+                integral_C_o = 2*np.pi*1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_C_o) 
 
         self._A = None
