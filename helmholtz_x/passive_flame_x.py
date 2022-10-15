@@ -73,11 +73,11 @@ class PassiveFlame:
 
             if 'ChokedInlet' in boundary_conditions[i]:
                 # https://www.oscilos.com/download/OSCILOS_Long_Tech_report.pdf
-                M1 = boundary_conditions[i]['ChokedInlet']
+                Mach = boundary_conditions[i]['ChokedInlet']
                 print("InletChoked BC is working")
-                R = (1-gamma*M1/(1+(gamma-1)*M1**2))/(1+gamma*M1/(1+(gamma-1)*M1**2))
+                R = (1-gamma*Mach/(1+(gamma-1)*Mach**2))/(1+gamma*Mach/(1+(gamma-1)*Mach**2))
                 Z = (1+R)/(1-R)
-                integral_C_i = 2*np.pi*1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
+                integral_C_i = 1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_C_i) 
 
             if 'ChokedOutlet' in boundary_conditions[i]:
@@ -86,7 +86,7 @@ class PassiveFlame:
                 print("ChokedOutlet BC is working")
                 R = R = (1-0.5*(gamma-1)*Mach)/(1+0.5*(gamma-1)*Mach)
                 Z = (1+R)/(1-R)
-                integral_C_o = 2*np.pi*1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
+                integral_C_o = 1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_C_o) 
 
         self._A = None
