@@ -12,8 +12,7 @@ class PassiveFlame:
         """
 
         This class defines the matrices A,B,C in
-        A + wB + w^2 C = 0 for the boundary conditions that consist
-        Robin BC.
+        A + wB + w^2 C = 0 for the passive/active flame problem that consists Robin BC.
     
         Parameters
         ----------
