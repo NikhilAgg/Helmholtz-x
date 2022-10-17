@@ -1,11 +1,10 @@
-from dolfinx.fem import Constant, Function, FunctionSpace, dirichletbc, form, locate_dofs_topological, assemble_scalar
+from dolfinx.fem import Function, FunctionSpace, dirichletbc, form, locate_dofs_topological
 from dolfinx.fem.petsc import assemble_matrix
-# from dolfinx.fem.assemble import 
 from .dolfinx_utils import info
 from ufl import Measure, TestFunction, TrialFunction, grad, inner
 from petsc4py import PETSc
 import numpy as np
-from mpi4py import MPI
+
 class PassiveFlame:
 
     def __init__(self, mesh, facet_tags, boundary_conditions,
@@ -56,6 +55,7 @@ class PassiveFlame:
 
         self.bcs = []
         self.integrals_R = []
+
         for i in boundary_conditions:
             gamma = 1.35
             if 'Dirichlet' in boundary_conditions[i]:
@@ -151,4 +151,3 @@ class PassiveFlame:
         C.assemble()
         info("- Matrix C is assembled.\n")
         self._C = C
-
