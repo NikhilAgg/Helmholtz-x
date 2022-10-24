@@ -457,7 +457,7 @@ class ActiveFlameNT:
             left_vector = None
             chunks = None
         left_vector = self.comm.scatter(chunks, root=0)
-        
+        # print("Left vector: ", left_vector, "RANK: ", self.rank)
         return left_vector
 
     def _assemble_right_vector(self):
@@ -472,6 +472,7 @@ class ActiveFlameNT:
         gradient_form = form(inner(n_ref,grad(self.phi_j)) / self.rho * self.w * self.dx)
 
         right_vector = self._indices_and_values(gradient_form)
+        
 
 
         # Parallelization
@@ -483,7 +484,7 @@ class ActiveFlameNT:
         right_vector = self.comm.bcast(right_vector,root=0)
 
         right_vector = self._remove_repeating_dofs(right_vector)
-        
+        # print("Right vector: ", right_vector, "RANK: ", self.rank)
         return right_vector
 
     def assemble_submatrices(self, problem_type='direct'):
@@ -498,12 +499,14 @@ class ActiveFlameNT:
 
         row = [item[0] for item in A]
         col = [item[0] for item in B]
+        # print("ROW:", row, "RANK: ", self.rank)
+        # print("COL:", col, "RANK: ", self.rank)
         row_vals = [item[1] for item in A]
         col_vals = [item[1] for item in B]
-
+        # print("row_vals:", row_vals, "RANK: ", self.rank)
+        # print("col_vals:", col_vals, "RANK: ", self.rank)
         product = np.outer(row_vals,col_vals)
         val = product.flatten()
-        
 
         global_size = self.V.dofmap.index_map.size_global
         local_size = self.V.dofmap.index_map.size_local

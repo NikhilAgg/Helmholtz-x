@@ -6,37 +6,37 @@ from .petsc4py_utils import vector_matrix_vector
 from .dolfinx_utils import info
 
 def results(E):
-
-    print()
-    print("******************************")
-    print("*** SLEPc Solution Results ***")
-    print("******************************")
-    print()
-
-    its = E.getIterationNumber()
-    print("Number of iterations of the method: %d" % its)
-
-    eps_type = E.getType()
-    print("Solution method: %s" % eps_type)
-
-    nev, ncv, mpd = E.getDimensions()
-    print("Number of requested eigenvalues: %d" % nev)
-
-    tol, maxit = E.getTolerances()
-    print("Stopping condition: tol=%.4g, maxit=%d" % (tol, maxit))
-
-    nconv = E.getConverged()
-    print("Number of converged eigenpairs %d" % nconv)
-
-    A = E.getOperators()[0]
-    vr, vi = A.createVecs()
-
-    if nconv > 0:
+    if MPI.COMM_WORLD.Get_rank()==0:
         print()
-    for i in range(nconv):
-        k = E.getEigenpair(i, vr, vi)
-        print("%15f, %15f" % (k.real, k.imag))
-    print()
+        print("******************************")
+        print("*** SLEPc Solution Results ***")
+        print("******************************")
+        print()
+
+        its = E.getIterationNumber()
+        print("Number of iterations of the method: %d" % its)
+
+        eps_type = E.getType()
+        print("Solution method: %s" % eps_type)
+
+        nev, ncv, mpd = E.getDimensions()
+        print("Number of requested eigenvalues: %d" % nev)
+
+        tol, maxit = E.getTolerances()
+        print("Stopping condition: tol=%.4g, maxit=%d" % (tol, maxit))
+
+        nconv = E.getConverged()
+        print("Number of converged eigenpairs %d" % nconv)
+
+        A = E.getOperators()[0]
+        vr, vi = A.createVecs()
+
+        if nconv > 0:
+            print()
+        for i in range(nconv):
+            k = E.getEigenpair(i, vr, vi)
+            print("%15f, %15f" % (k.real, k.imag))
+        print()
 
 def eps_solver(A, C, target, nev, two_sided=False, print_results=False):
 

@@ -44,7 +44,7 @@ def rho(mesh, x_f, a_f, rho_d, rho_u, degree=1):
     return rho
 
 def rho_ideal(mesh, temperature, P_amb, R):
-    V = FunctionSpace(mesh, ("DG", 0))
+    V = FunctionSpace(mesh, ("CG", 1))
     density = Function(V)
     density.x.array[:] =  P_amb /(R * temperature.x.array)
     density.x.scatter_forward()
@@ -55,7 +55,7 @@ def gaussianFunction(mesh, x_r, a_r, degree=1):
     w = Function(V)
     # x = V.tabulate_dof_coordinates()
     if mesh.geometry.dim == 1:
-        x_r = x_r[0][0]
+        x_r = x_r[0]
         w.interpolate(lambda x: gaussian(x,x_r,a_r))
     elif mesh.geometry.dim == 2:
         # w.interpolate(lambda x: gaussian2D(x,x_r,a_r))
@@ -165,24 +165,28 @@ def c_DG(mesh, x_f, c_u, c_d):
 
 def sound_speed_variable_gamma(mesh, temperature):
     # https://www.engineeringtoolbox.com/air-speed-sound-d_603.html
-    V = FunctionSpace(mesh, ("DG", 0))
+    V = FunctionSpace(mesh, ("CG", 1))
     c = Function(V)
+    cp = Function(V)
+    cv = Function(V)
+    gamma = Function(V)
+    r_gas = 287.1
     if isinstance(temperature, Function):
-        c.x.array[:] =  20.05 * np.sqrt(temperature.x.array)
-    else:
-        # c.x.array[:] =  20.05 * np.sqrt(temperature)
-        cp = Function(V)
-        cv = Function(V)
-        r_gas = 287.1
-        cp.x.array[:] = 973.60091+0.1333*temperature
+        cp.x.array[:] = 973.60091+0.1333*temperature.x.array[:]
         cv.x.array[:] = cp.x.array - r_gas
-        c.x.array[:] = np.sqrt(cp.x.array/cv.x.array*r_gas*temperature)
+        gamma.x.array[:] = cp.x.array/cv.x.array
+        c.x.array[:] = np.sqrt(gamma.x.array[:]*r_gas*temperature.x.array[:])
+    else:
+        cp_ = 973.60091+0.1333*temperature
+        cv_ = cp_ - r_gas
+        gamma_ = cp_/cv_
+        c.x.array[:] = np.sqrt(gamma_ * r_gas * temperature)
     c.x.scatter_forward()
     return c
 
 def sound_speed(mesh, temperature):
     # https://www.engineeringtoolbox.com/air-speed-sound-d_603.html
-    V = FunctionSpace(mesh, ("DG", 0))
+    V = FunctionSpace(mesh, ("CG", 1))
     c = Function(V)
     if isinstance(temperature, Function):
         c.x.array[:] =  20.05 * np.sqrt(temperature.x.array)

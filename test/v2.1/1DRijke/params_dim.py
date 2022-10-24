@@ -47,6 +47,9 @@ U_bulk = 0.1  # [m/s]
 # N = 0.014  # [/]
 n_value = 1
 
+FTF_mag = 1.0
+eta = FTF_mag * Q_tot / U_bulk
+
 # For 1D dimensional consistency
 d_tube = 0.047
 S_c = np.pi * d_tube **2 / 4
