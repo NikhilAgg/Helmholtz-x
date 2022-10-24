@@ -1,6 +1,6 @@
 from dolfinx.fem import Function, FunctionSpace, form, locate_dofs_topological
 from dolfinx.fem.assemble import assemble_scalar
-from dolfinx.mesh import meshtags
+from dolfinx.mesh import meshtags,locate_entities,create_unit_interval
 from dolfinx.io import XDMFFile, VTXWriter
 from mpi4py import MPI
 from scipy import interpolate
@@ -312,3 +312,40 @@ def ParallelMeshVisualizer(filename):
     with XDMFFile(mesh.comm, "Ranks.xdmf", "w") as xdmf:
         xdmf.write_mesh(mesh)
         xdmf.write_meshtags(mt)
+
+def OneDimensionalSetup(n_elem, x_f = 0.25, degree=1):
+    """ This function builds one dimensional setup.
+        For boundaries, Tag 1 specifies left end and Tag 2 specifies right end. 
+    Args:
+        n_elem (int): Number of elements for 1D setup
+        x_f (float): Specifies the position of the flame. Default is 0.25
+    Returns:
+        mesh, subdomains, facet_tags
+    """
+    
+    mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
+    V = FunctionSpace(mesh, ("Lagrange", degree))
+
+    def fl_subdomain_func(x, x_f=x_f,a_f = 0.025, eps=1e-16):
+        x = x[0]
+        return np.logical_and(x_f - a_f - eps <= x, x <= x_f + a_f + eps)
+    tdim = mesh.topology.dim
+    marked_cells = locate_entities(mesh, tdim, fl_subdomain_func)
+    fl = 0
+    subdomains = meshtags(mesh, tdim, marked_cells, np.full(len(marked_cells), fl, dtype=np.int32))
+
+    boundaries = [(1, lambda x: np.isclose(x[0], 0)),
+                (2, lambda x: np.isclose(x[0], 1))]
+
+    facet_indices, facet_markers = [], []
+    fdim = mesh.topology.dim - 1
+    for (marker, locator) in boundaries:
+        facets = locate_entities(mesh, fdim, locator)
+        facet_indices.append(facets)
+        facet_markers.append(np.full(len(facets), marker))
+    facet_indices = np.array(np.hstack(facet_indices), dtype=np.int32)
+    facet_markers = np.array(np.hstack(facet_markers), dtype=np.int32)
+    sorted_facets = np.argsort(facet_indices)
+    facet_tags = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
+
+    return mesh, subdomains, facet_tags

@@ -10,7 +10,7 @@ from helmholtz_x.eigensolvers_x import eps_solver
 from helmholtz_x.passive_flame_x import PassiveFlame
 from helmholtz_x.active_flame_x import ActiveFlameNT
 from helmholtz_x.eigenvectors_x import normalize_eigenvector, normalize_unit
-from helmholtz_x.dolfinx_utils import xdmf_writer
+from helmholtz_x.dolfinx_utils import xdmf_writer, OneDimensionalSetup
 from petsc4py import PETSc
 import params_dim
 
@@ -19,32 +19,7 @@ import params_dim
 degree = 1
 # number of elements in each direction of mesh
 n_elem = 40
-mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
-V = FunctionSpace(mesh, ("Lagrange", degree))
-
-def fl_subdomain_func(x, eps=1e-16):
-    x = x[0]
-    x_f = 0.25
-    a_f = 0.025
-    return np.logical_and(x_f - a_f - eps <= x, x <= x_f + a_f + eps)
-tdim = mesh.topology.dim
-marked_cells = locate_entities(mesh, tdim, fl_subdomain_func)
-fl = 0
-subdomains = meshtags(mesh, tdim, marked_cells, np.full(len(marked_cells), fl, dtype=np.int32))
-
-boundaries = [(1, lambda x: np.isclose(x[0], 0)),
-              (2, lambda x: np.isclose(x[0], 1))]
-
-facet_indices, facet_markers = [], []
-fdim = mesh.topology.dim - 1
-for (marker, locator) in boundaries:
-    facets = locate_entities(mesh, fdim, locator)
-    facet_indices.append(facets)
-    facet_markers.append(np.full(len(facets), marker))
-facet_indices = np.array(np.hstack(facet_indices), dtype=np.int32)
-facet_markers = np.array(np.hstack(facet_markers), dtype=np.int32)
-sorted_facets = np.argsort(facet_indices)
-facet_tag = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sorted_facets])
+mesh, subdomains, facet_tags = OneDimensionalSetup(n_elem)
 
 # Define the boundary conditions
 
