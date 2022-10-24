@@ -45,9 +45,7 @@ Q_tot = 200.  # [W]
 U_bulk = 0.1  # [m/s]
 N = 0.014  # [/]
 
-n = N*Q_tot/U_bulk  # [J/m]
-
-
+N  /= pi/4 * 0.047**2
 """[n_dim is case dependent]
 
 n_dim = N*Q_tot/U_bulk  # [J/m]

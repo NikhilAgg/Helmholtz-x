@@ -14,7 +14,7 @@ import params_dim
 # approximation space polynomial degree
 degree = 1
 # number of elements in each direction of mesh
-n_elem = 5000
+n_elem = 500
 mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
 V = FunctionSpace(mesh, ("Lagrange", degree))
 
@@ -44,8 +44,8 @@ facet_tag = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sor
 
 # Define the boundary conditions
 
-boundary_conditions = {1: {'Robin': params_dim.Z_in},  # inlet
-                       2: {'Robin': params_dim.Z_out}}  # outlet
+boundary_conditions = {1: {'Robin': params_dim.R_in},  # inlet
+                       2: {'Robin': params_dim.R_out}}  # outlet
 
 # Define Speed of sound
 
@@ -63,7 +63,7 @@ A = matrices.A
 B = matrices.B
 C = matrices.C
 
-ftf = n_tau(params_dim.n, params_dim.tau)
+ftf = n_tau(params_dim.N, params_dim.tau)
 
 D = ActiveFlame(mesh, subdomains,
                     params_dim.x_r, params_dim.rho_in, params_dim.Q_tot, params_dim.U_bulk, ftf,
@@ -71,7 +71,7 @@ D = ActiveFlame(mesh, subdomains,
 
 D.assemble_submatrices()
 
-E = fixed_point_iteration_pep(matrices, D, 1000, nev=2, i=0, print_results= False)
+E = fixed_point_iteration_pep(matrices, D, 1500, nev=5, i=0, print_results= True)
 
 omega, uh = normalize_eigenvector(mesh, E, 0, degree=1, which='right')
 

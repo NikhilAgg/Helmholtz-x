@@ -13,7 +13,7 @@ import params
 # approximation space polynomial degree
 degree = 1
 # number of elements in each direction of mesh
-n_elem = 3000
+n_elem = 300
 mesh = create_unit_interval(MPI.COMM_WORLD, n_elem)
 V = FunctionSpace(mesh, ("Lagrange", degree))
 
@@ -43,8 +43,8 @@ facet_tag = meshtags(mesh, fdim, facet_indices[sorted_facets], facet_markers[sor
 
 # Define the boundary conditions
 
-boundary_conditions = {1: {'Robin': params.Z_in},  # inlet
-                       2: {'Robin': params.Z_out}}  # outlet
+boundary_conditions = {1: {'Robin': params.R_in},  # inlet
+                       2: {'Robin': params.R_out}}  # outlet
 
 # Define Speed of sound
 
