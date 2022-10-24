@@ -36,7 +36,7 @@ def rho(mesh, x_f, a_f, rho_d, rho_u, degree=1):
     rho = Function(V)
     # x = V.tabulate_dof_coordinates()   
     if mesh.geometry.dim == 1 or mesh.geometry.dim == 2:
-        x_f = x_f[0][0]
+        x_f = x_f[0]
         rho.interpolate(lambda x: density(x[0], x_f, a_f, rho_d, rho_u))
     elif mesh.geometry.dim == 3:
         x_f = x_f[0][2]
@@ -86,7 +86,7 @@ def h(mesh, x_f, a_f, degree=1):
     h = Function(V)
     # x = V.tabulate_dof_coordinates()
     if mesh.geometry.dim == 1:
-        x_f = x_f[0][0]
+        x_f = x_f[0]
         h.interpolate(lambda x: gaussian(x,x_f,a_f))
     elif mesh.geometry.dim == 2:
         # h.interpolate(lambda x: gaussian2D(x,x_f,a_f))
@@ -143,17 +143,17 @@ def n_bump(mesh, x_f, a_f, n_value, degree=1):
     return n
 
 def c_DG(mesh, x_f, c_u, c_d):
-    V = FunctionSpace(mesh, ("DG", 0))
+    V = FunctionSpace(mesh, ("CG", 1))
     c = Function(V)
     x = V.tabulate_dof_coordinates()
     if mesh.geometry.dim == 1:
-        x_f = x_f[0][0]
+        x_f = x_f[0]
         axis = 0
     elif mesh.geometry.dim == 2:
-        x_f = x_f[0][0]
+        x_f = x_f[0]
         axis = 0
     elif mesh.geometry.dim == 3:
-        x_f = x_f[0][2]
+        x_f = x_f[2]
         axis = 2
     for i in range(x.shape[0]):
         midpoint = x[i,:]

@@ -57,7 +57,7 @@ def normalize_eigenvector(mesh, obj, i, degree=1, which='right',mpc=None):
     p_normalized.x.scatter_forward()
 
     if MPI.COMM_WORLD.rank == 0:
-        print(f"Eigenvalue-> {omega:.3f} | Eigenfrequency ->  {omega/(2*np.pi):.3f}\n")
+        print(f"Eigenvalue-> {omega:.6f} | Eigenfrequency ->  {omega/(2*np.pi):.6f}\n")
 
     return omega, p_normalized
 

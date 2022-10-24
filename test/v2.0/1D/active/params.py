@@ -105,7 +105,7 @@ a_f = a_f_dim/L_ref
 from dolfinx.fem import Function,FunctionSpace
 
 def c(mesh):
-    V = FunctionSpace(mesh, ("DG", 0))
+    V = FunctionSpace(mesh, ("CG", 1))
     c = Function(V)
     x = V.tabulate_dof_coordinates()
     global c_in

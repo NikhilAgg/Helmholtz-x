@@ -71,7 +71,7 @@ D = ActiveFlame(mesh, subdomains,
 
 D.assemble_submatrices()
 
-E = fixed_point_iteration_pep(matrices, D, 1500, nev=5, i=0, print_results= True)
+E = fixed_point_iteration_pep(matrices, D, 1161, nev=5, i=0, print_results= True)
 
 omega, uh = normalize_eigenvector(mesh, E, 0, degree=1, which='right')
 

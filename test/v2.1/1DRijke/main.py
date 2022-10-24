@@ -18,7 +18,7 @@ import params
 # approximation space polynomial degree
 degree = 1
 # number of elements in each direction of mesh
-n_elem = 300
+n_elem = 4000
 
 mesh, subdomains, facet_tags = OneDimensionalSetup(n_elem)
 
@@ -49,7 +49,7 @@ rho = params.rho(mesh, params.x_f, params.a_f, params.rho_d, params.rho_u)
 w = params.gaussianFunction(mesh, params.x_r, params.a_r)
 h = params.gaussianFunction(mesh, params.x_f, params.a_f)
 
-target = 200 * 2 * np.pi # 150 * 2 * np.pi
+target = np.pi # 150 * 2 * np.pi
 
 D = ActiveFlameNT(mesh, subdomains, w, h, rho, 1, 1, params.eta, params.tau, degree=degree)
 D.assemble_submatrices()

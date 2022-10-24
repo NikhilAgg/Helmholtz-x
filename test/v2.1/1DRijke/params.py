@@ -5,6 +5,10 @@ from helmholtz_x.parameters_utils import c_DG, rho,tau_linear,h,gaussianFunction
 
 # ------------------------------------------------------------
 
+L_ref = 1.  # [m]
+
+# ------------------------------------------------------------
+
 r = 287.  # [J/kg/K]
 gamma = 1.4  # [/]
 
@@ -17,11 +21,12 @@ c_amb = sqrt(gamma*p_amb/rho_amb)  # [m/s]
 
 # ------------------------------------------------------------
 
-rho_u = rho_amb  # [kg/m^3]
-rho_d = 0.85  # [kg/m^3]
+rho_in_dim = rho_amb  # [kg/m^3]
+rho_out_dim = 0.85  # [kg/m^3]
 
-c_u = sqrt(gamma*p_amb/rho_u)  # [kg/m^3]
-c_d = sqrt(gamma*p_amb/rho_d)  # [kg/m^3]
+c_in_dim = sqrt(gamma*p_amb/rho_in_dim)  # [kg/m^3]
+c_out_dim = sqrt(gamma*p_amb/rho_out_dim)  # [kg/m^3]
+
 # Reflection coefficients
 
 R_in = - 0.975 - 0.05j  # [/] #\abs(Z} e^{\angle(Z) i} 
@@ -33,7 +38,6 @@ R_out = - 0.975 - 0.05j  # [/]
 
 Q_tot = 200.  # [W]
 U_bulk = 0.1  # [m/s]
-# N = 0.014  # [/]
 
 
 FTF_mag =  0.014  # [/]
@@ -45,15 +49,41 @@ S_c = np.pi * d_tube **2 / 4
 
 eta /=  S_c
 
-tau = 0.0015
+tau_dim = 0.0015
 
 
 
-x_f = np.array([0.25, 0., 0.])  # [m]
-a_f = 0.025  # [m]
+x_f_dim = np.array([0.25, 0., 0.])  # [m]
+a_f_dim = 0.025  # [m]
 
-x_r = np.array([0.20, 0., 0.])  # [m]
-a_r = 0.025
+x_r_dim = np.array([0.20, 0., 0.])  # [m]
+a_r_dim = 0.025
+
+# Non-dimensionalization
+
+U_ref = c_amb  # [m/s]
+p_ref = p_amb  # [Pa]
+
+rho_u = rho_in_dim*U_ref**2/p_ref
+rho_d = rho_out_dim*U_ref**2/p_ref
+
+c_u = c_in_dim/U_ref
+c_d = c_out_dim/U_ref
+
+# ------------------------------------------------------------
+
+eta = eta/(p_ref*L_ref**2)
+
+tau = tau_dim*U_ref/L_ref
+
+# ------------------------------------------------------------
+
+x_f = x_f_dim/L_ref
+x_r = x_r_dim/L_ref
+
+a_f = a_f_dim/L_ref
+a_r = a_r_dim/L_ref
+
 
 if __name__ == '__main__':
     from mpi4py import MPI
@@ -80,13 +110,3 @@ if __name__ == '__main__':
     plt.savefig("Results/rho.png")
     plt.clf()
     
-    # n_plot = n(mesh,x_f[0][0])
-    # plt.plot(mesh.geometry.x, n_plot.x.array.real)
-    # plt.ylabel(r"$n$")
-    # plt.savefig("n.png")
-    # plt.clf()
-
-    tau_plot = tau_linear(mesh,x_f, a_f, tau_u, tau_d)
-    plt.plot(mesh.geometry.x, tau_plot.x.array.real)
-    plt.ylabel(r"$\tau$")
-    plt.savefig("Results/tau.png")
