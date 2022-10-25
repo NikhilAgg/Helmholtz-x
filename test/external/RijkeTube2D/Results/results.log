@@ -1,0 +1,48 @@
+XDMF Mesh is loaded.
+Number of cells:  12,114
+Number of cores:  1 
+
+- Passive matrices are assembling..
+- Matrix A is assembled.
+! Note: It can be faster to use EPS solver.
+- Matrix B is assembled.
+- Matrix C is assembled.
+
+- Generating Matrix D..
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
+-> Fixed point iteration started.
+
+* iter =  1
+- Generating Matrix D..
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1247.89610248  +3.43490827j,  |domega| = 3.62e+00
+
+* iter =  2
+- Generating Matrix D..
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1246.81143546  +6.80831246j,  |domega| = 3.54e+00
+
+* iter =  3
+- Generating Matrix D..
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1246.81126854  +6.80842342j,  |domega| = 2.00e-04
+
+* iter =  4
+- Generating Matrix D..
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1246.81126853  +6.80842342j,  |domega| = 5.50e-09
+
+Eigenvalue-> 1246.811269+6.808423j
+
+Frequency -> 198.436176 (1/s) | Growth Rate -> 6.808423 (rad/s) 
+
+Total Execution Time:  0:00:20.236614

@@ -13,7 +13,7 @@ def gaussian(x,x_ref,sigma):
 
 def gaussian2D(x, x_ref, sigma):
     first_term = 1/((2*np.pi)*sigma**2)
-    second_term = np.exp(((x[0]-x_ref[0][0])**2+(x[1]-x_ref[0][1])**2)/(-2*sigma**2))
+    second_term = np.exp(((x[0]-x_ref[0])**2+(x[1]-x_ref[1])**2)/(-2*sigma**2))
     return first_term*second_term
 
 def gaussian3D(x,x_ref,sigma):
@@ -39,7 +39,7 @@ def rho(mesh, x_f, a_f, rho_d, rho_u, degree=1):
         x_f = x_f[0]
         rho.interpolate(lambda x: density(x[0], x_f, a_f, rho_d, rho_u))
     elif mesh.geometry.dim == 3:
-        x_f = x_f[0][2]
+        x_f = x_f[2]
         rho.interpolate(lambda x: density(x[2], x_f, a_f, rho_d, rho_u))
     return rho
 
@@ -58,9 +58,10 @@ def gaussianFunction(mesh, x_r, a_r, degree=1):
         x_r = x_r[0]
         w.interpolate(lambda x: gaussian(x,x_r,a_r))
     elif mesh.geometry.dim == 2:
-        # w.interpolate(lambda x: gaussian2D(x,x_r,a_r))
-        x_r = x_r[0][0]
-        w.interpolate(lambda x: gaussian(x,x_r,a_r))
+        # x_r = x_r[0]
+        w.interpolate(lambda x: gaussian2D(x,x_r,a_r))
+        
+        # w.interpolate(lambda x: gaussian(x,x_r,a_r))
     # elif mesh.geometry.dim == 3:
     #     x_r = x_r[0][2]
     #     w.interpolate(lambda x: gaussian3D(x,x_r,a_r))
@@ -90,7 +91,7 @@ def h(mesh, x_f, a_f, degree=1):
         h.interpolate(lambda x: gaussian(x,x_f,a_f))
     elif mesh.geometry.dim == 2:
         # h.interpolate(lambda x: gaussian2D(x,x_f,a_f))
-        x_f = x_f[0][0]
+        x_f = x_f[0]
         h.interpolate(lambda x: gaussian(x,x_f,a_f))
     elif mesh.geometry.dim == 3:
         x_f = x_f[0][2]

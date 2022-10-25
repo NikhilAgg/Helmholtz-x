@@ -1,0 +1,46 @@
+285.6000456960073 409.92006558721056
+ETA PRF -26.83006111950271
+- Passive matrices are assembling..
+- Matrix A is assembled.
+! Note: It can be faster to use EPS solver.
+- Matrix B is assembled.
+- Matrix C is assembled.
+
+- Generating Matrix D..
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
+-> Fixed point iteration started.
+
+* iter =  1
+- Generating Matrix D..
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1248.05516931  +3.43307360j,  |domega| = 3.61e+00
+
+* iter =  2
+- Generating Matrix D..
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1246.97016345  +6.80472192j,  |domega| = 3.54e+00
+
+* iter =  3
+- Generating Matrix D..
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1246.96999669  +6.80483247j,  |domega| = 2.00e-04
+
+* iter =  4
+- Generating Matrix D..
+- Matrix D is assembled.
+- PEP solver started.
+- PEP solver converged. Eigenvalue computed.
++ omega = +1246.96999668  +6.80483247j,  |domega| = 5.58e-09
+
+Eigenvalue-> 1246.969997+6.804832j
+
+Frequency -> 198.461439 (1/s) | Growth Rate -> 6.804832 (rad/s) 
+
+Total Execution Time:  0:00:05.167949
