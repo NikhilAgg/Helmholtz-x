@@ -473,8 +473,6 @@ class ActiveFlameNT:
 
         right_vector = self._indices_and_values(gradient_form)
         
-
-
         # Parallelization
         right_vector = self.comm.gather(right_vector, root=0)
         if right_vector:

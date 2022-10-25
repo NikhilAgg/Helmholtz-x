@@ -12,7 +12,7 @@ from helmholtz_x.active_flame_x import ActiveFlameNT
 from helmholtz_x.eigenvectors_x import normalize_eigenvector
 from helmholtz_x.dolfinx_utils import xdmf_writer, normalize, OneDimensionalSetup
 from petsc4py import PETSc
-import params
+import params_dim
 
 
 # approximation space polynomial degree
@@ -24,13 +24,12 @@ mesh, subdomains, facet_tags = OneDimensionalSetup(n_elem)
 
 # Define the boundary conditions
 
-boundary_conditions = {1: {'Robin': params.R_in},  # inlet
-                       2: {'Robin': params.R_out}}  # outlet
-
+boundary_conditions = {1: {'Robin': params_dim.R_in},  # inlet
+                       2: {'Robin': params_dim.R_out}}  # outlet
 
 # Define Speed of sound
 
-c = params.c_DG(mesh, params.x_f, params.c_u, params.c_d)
+c = params_dim.c_DG(mesh, params_dim.x_f, params_dim.c_u, params_dim.c_d)
 
 # Introduce Passive Flame Matrices
 
@@ -45,13 +44,13 @@ B = matrices.B
 C = matrices.C
 
 
-rho = params.rho(mesh, params.x_f, params.a_f, params.rho_d, params.rho_u)
-w = params.gaussianFunction(mesh, params.x_r, params.a_r)
-h = params.gaussianFunction(mesh, params.x_f, params.a_f)
+rho = params_dim.rho(mesh, params_dim.x_f, params_dim.a_f, params_dim.rho_d, params_dim.rho_u)
+w = params_dim.gaussianFunction(mesh, params_dim.x_r, params_dim.a_r)
+h = params_dim.gaussianFunction(mesh, params_dim.x_f, params_dim.a_f)
 
 target = 200 * 2 * np.pi # 150 * 2 * np.pi
 
-D = ActiveFlameNT(mesh, subdomains, w, h, rho, 1, 1, params.eta, params.tau, degree=degree)
+D = ActiveFlameNT(mesh, subdomains, w, h, rho, 1, 1, params_dim.eta, params_dim.tau, degree=degree)
 D.assemble_submatrices()
 
 E = fixed_point_iteration_pep(matrices, D, target, nev=2, i=0, print_results= False)
