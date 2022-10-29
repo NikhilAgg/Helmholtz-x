@@ -3,7 +3,7 @@ from mpi4py import MPI
 import numpy as np
 from .eigenvectors_x import normalize_eigenvector
 from .petsc4py_utils import vector_matrix_vector
-from .dolfinx_utils import info
+from .solver_utils import info
 
 def results(E):
     if MPI.COMM_WORLD.Get_rank()==0:

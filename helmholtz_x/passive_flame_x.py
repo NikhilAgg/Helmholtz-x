@@ -1,14 +1,17 @@
-from dolfinx.fem import Function, FunctionSpace, dirichletbc, form, locate_dofs_topological
+from dolfinx.fem import Function, FunctionSpace, dirichletbc, form, locate_dofs_topological, Constant
 from dolfinx.fem.petsc import assemble_matrix
-from .dolfinx_utils import info
+from dolfinx.fem.assemble import assemble_scalar
+from .solver_utils import info
+from .parameters_utils import sound_speed_variable_gamma, gamma_function
 from ufl import Measure, TestFunction, TrialFunction, grad, inner
 from petsc4py import PETSc
+from mpi4py import MPI
 import numpy as np
 
 class PassiveFlame:
 
     def __init__(self, mesh, facet_tags, boundary_conditions,
-                 c, degree=1):
+                 parameter, degree=1):
         """
 
         This class defines the matrices A,B,C in
@@ -41,7 +44,7 @@ class PassiveFlame:
         self.facet_tag = facet_tags
         self.fdim = mesh.topology.dim - 1
         self.boundary_conditions = boundary_conditions
-        self.c = c
+        self.parameter = parameter
         self.degree = degree
 
         self.dx = Measure('dx', domain=mesh)
@@ -51,12 +54,21 @@ class PassiveFlame:
 
         self.u = TrialFunction(self.V)
         self.v = TestFunction(self.V)
+        
+        self.AreaConstant = Constant(self.mesh, PETSc.ScalarType(1))
+
+        if self.parameter.name =="temperature":
+            self.c = sound_speed_variable_gamma(mesh, parameter)
+            self.gamma = gamma_function(self.mesh, self.parameter)
+            info("/\ Temperature function is used for passive flame matrices.")
+        else:
+            self.c = parameter
+            info("\/ Speed of sound function is used for passive flame matrices.")
 
         self.bcs = []
         self.integrals_R = []
 
         for i in boundary_conditions:
-            gamma = 1.35
             if 'Dirichlet' in boundary_conditions[i]:
                 u_bc = Function(self.V)
                 facets = np.array(self.facet_tag.indices[self.facet_tag.values == i])
@@ -72,16 +84,23 @@ class PassiveFlame:
 
             if 'ChokedInlet' in boundary_conditions[i]:
                 # https://www.oscilos.com/download/OSCILOS_Long_Tech_report.pdf
+                A_inlet = assemble_scalar(form(self.AreaConstant * self.ds(i)))
+                gamma_inlet_form = form(self.gamma/A_inlet* self.ds(i))
+                gamma_inlet = MPI.COMM_WORLD.allreduce(assemble_scalar(gamma_inlet_form), op=MPI.SUM)
+
                 Mach = boundary_conditions[i]['ChokedInlet']
-                R = (1-gamma*Mach/(1+(gamma-1)*Mach**2))/(1+gamma*Mach/(1+(gamma-1)*Mach**2))
+                R = (1-gamma_inlet*Mach/(1+(gamma_inlet-1)*Mach**2))/(1+gamma_inlet*Mach/(1+(gamma_inlet-1)*Mach**2))
                 Z = (1+R)/(1-R)
                 integral_C_i = 1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_C_i) 
 
             if 'ChokedOutlet' in boundary_conditions[i]:
                 # https://www.oscilos.com/download/OSCILOS_Long_Tech_report.pdf
+                A_outlet = assemble_scalar(form(self.AreaConstant * self.ds(i)))
+                gamma_outlet_form = form(self.gamma/A_outlet* self.ds(i))
+                gamma_outlet = MPI.COMM_WORLD.allreduce(assemble_scalar(gamma_outlet_form), op=MPI.SUM)
                 Mach = boundary_conditions[i]['ChokedOutlet']
-                R = R = (1-0.5*(gamma-1)*Mach)/(1+0.5*(gamma-1)*Mach)
+                R = R = (1-0.5*(gamma_outlet-1)*Mach)/(1+0.5*(gamma_outlet-1)*Mach)
                 Z = (1+R)/(1-R)
                 integral_C_o = 1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_C_o) 

@@ -1,13 +1,14 @@
-import basix
 from dolfinx.fem  import Function, FunctionSpace, Constant, form, assemble_scalar
 from dolfinx.fem.petsc import assemble_vector
 from dolfinx.geometry import compute_collisions, compute_colliding_cells, BoundingBoxTree
-from .dolfinx_utils import info
+from .solver_utils import info
+from .parameters_utils import gamma_function
 from mpi4py import MPI
 from ufl import Measure, TestFunction, TrialFunction, inner, as_vector, grad
-import ufl
 from petsc4py import PETSc
+import basix
 import numpy as np
+import ufl
 
 class ActiveFlame:
 
@@ -345,6 +346,205 @@ class ActiveFlame:
 
 class ActiveFlameNT:
 
+    def __init__(self, mesh, subdomains, w, h, rho, T, eta, tau, degree=1):
+
+        self.mesh = mesh
+        self.subdomains = subdomains
+        self.w = w
+        self.h = h
+        self.rho = rho
+        self.T = T
+        self.eta = eta
+        self.tau = tau
+        self.degree = degree
+        self.gamma = gamma_function(self.mesh, self.T)
+
+        self.comm = MPI.COMM_WORLD
+        self.rank = self.comm.Get_rank()
+        self.size = self.comm.Get_size()
+        self.tol = 1e-5
+        self.omega = 0
+
+        self._a = None
+        self._b = None
+        self._D_kj = None
+        self._D_kj_adj = None
+        self._D = None
+        self._D_adj = None
+
+        self.V = FunctionSpace(mesh, ("Lagrange", degree))
+        self.dofmaps = self.V.dofmap
+        self.dimension = self.mesh.topology.dim
+
+        self.phi_i = TrialFunction(self.V)
+        self.phi_j = TestFunction(self.V)
+
+        self.dx = ufl.dx
+
+        self._a = self._assemble_left_vector()
+        self._b = self._assemble_right_vector()
+
+    @property
+    def submatrices(self):
+        return self._D_kj
+    @property
+    def adjoint_submatrices(self):
+        return self._D_kj_adj
+    @property
+    def matrix(self):
+        return self._D
+    @property
+    def adjoint_matrix(self):
+        return self._D_adj
+    @property
+    def a(self):
+        return self._a
+    @property
+    def b(self):
+        return self._b
+
+    def _indices_and_values(self, form):
+
+        temp = Function(self.V)
+
+        assemble_vector(temp.vector, form)
+        temp.vector.ghostUpdate(addv=PETSc.InsertMode.ADD_VALUES, mode=PETSc.ScatterMode.REVERSE)
+        packed = temp.x.array
+        packed.real[abs(packed.real) < self.tol] = 0.0
+        packed.imag[abs(packed.imag) < self.tol] = 0.0
+
+        indices = np.array(np.flatnonzero(packed),dtype=np.int32)
+        global_indices = self.dofmaps.index_map.local_to_global(indices)
+        packed = list(zip(global_indices, packed[indices]))
+
+        return packed
+
+    def _remove_repeating_dofs(self, vector):
+        seen = set()
+        keep = []
+        for ind, value in vector:
+            if ind in seen:
+                pass
+            else:
+                seen.add(ind)
+                keep.append((ind, value))
+        return keep
+
+    def _assemble_left_vector(self, Derivative=False):
+
+        
+        coefficient = (self.gamma - 1) # * q_tot / self.U_bulk
+
+        if Derivative == False:
+            form_to_assemble = form(coefficient *  self.phi_i  * self.eta * self.h * ufl.exp(1j*self.omega*self.tau)  *  self.dx)
+        else:
+            form_to_assemble = form(coefficient *  1j * self.tau * self.phi_i * self.h * self.n * ufl.exp(1j*self.omega*self.tau)  *  self.dx)
+
+        left_vector = self._indices_and_values(form_to_assemble)
+
+        # Parallelization
+        left_vector = self.comm.gather(left_vector, root=0)
+        if self.rank == 0:
+            left_vector = [self._remove_repeating_dofs([item for sublist in left_vector for item in sublist])]
+            left_vector = [j for i in left_vector for j in i]
+            chunks = [[] for _ in range(self.size)]
+            for i, chunk in enumerate(left_vector):
+                chunks[i % self.size].append(chunk)
+        else:
+            left_vector = None
+            chunks = None
+        left_vector = self.comm.scatter(chunks, root=0)
+        # print("Left vector: ", left_vector, "RANK: ", self.rank)
+        return left_vector
+
+    def _assemble_right_vector(self):
+
+        if self.dimension == 1:
+            n_ref = as_vector([1])
+        elif self.dimension == 2:
+            n_ref = as_vector([1,0])
+        else:
+            n_ref = as_vector([0,0,1])
+
+        gradient_form = form(inner(n_ref,grad(self.phi_j)) / self.rho * self.w * self.dx)
+
+        right_vector = self._indices_and_values(gradient_form)
+        
+        # Parallelization
+        right_vector = self.comm.gather(right_vector, root=0)
+        if right_vector:
+            right_vector = [j for i in right_vector for j in i]
+        else:
+            right_vector=[]
+        right_vector = self.comm.bcast(right_vector,root=0)
+
+        right_vector = self._remove_repeating_dofs(right_vector)
+        # print("Right vector: ", right_vector, "RANK: ", self.rank)
+        return right_vector
+
+    def assemble_submatrices(self, problem_type='direct'):
+
+        if problem_type == 'direct':
+            A = self._a
+            B = self._b
+
+        elif problem_type == 'adjoint':
+            A = self._b
+            B = self._a
+
+        row = [item[0] for item in A]
+        col = [item[0] for item in B]
+        # print("ROW:", row, "RANK: ", self.rank)
+        # print("COL:", col, "RANK: ", self.rank)
+        row_vals = [item[1] for item in A]
+        col_vals = [item[1] for item in B]
+        # print("row_vals:", row_vals, "RANK: ", self.rank)
+        # print("col_vals:", col_vals, "RANK: ", self.rank)
+        product = np.outer(row_vals,col_vals)
+        val = product.flatten()
+
+        global_size = self.V.dofmap.index_map.size_global
+        local_size = self.V.dofmap.index_map.size_local
+
+        info("- Generating Matrix D..")
+
+        mat = PETSc.Mat().create(PETSc.COMM_WORLD)
+        mat.setSizes([(local_size, global_size), (local_size, global_size)])
+        mat.setType('mpiaij')
+        
+        ONNZ = len(col)*np.ones(local_size,dtype=np.int32)
+        mat.setPreallocationNNZ([ONNZ, ONNZ])
+
+        mat.setOption(PETSc.Mat.Option.NEW_NONZERO_ALLOCATION_ERR, False)
+        mat.setUp()
+        mat.setValues(row, col, val, addv=PETSc.InsertMode.ADD_VALUES)
+        mat.assemblyBegin()
+        mat.assemblyEnd()
+
+        # from scipy.sparse import csr_matrix
+        # ai, aj, av = mat.getValuesCSR()
+        # CSR = csr_matrix((av, aj, ai),shape=(local_size, global_size))
+        # import matplotlib.pyplot as plt
+        # plt.spy(CSR)
+        # plt.savefig(f"CSR_{self.rank}.png")
+
+        self._D = mat
+
+    def assemble_matrix(self, omega, problem_type='direct'):
+        self.omega = omega
+        self._a = self._assemble_left_vector()
+        self.assemble_submatrices(problem_type)
+        info("- Matrix D is assembled.")
+
+    def get_derivative(self, omega, problem_type='direct'):
+        self.omega = omega
+        self._a = self._assemble_left_vector(Derivative=True)
+        self.assemble_submatrices(problem_type)
+        info("- Derivative of D is assembled.")
+        return self._D
+
+class ActiveFlameNT4:
+
     def __init__(self, mesh, subdomains, w, h, rho, Q_tot, U_bulk, eta, tau, degree=1):
 
         self.mesh = mesh
@@ -357,7 +557,7 @@ class ActiveFlameNT:
         self.eta = eta
         self.tau = tau
         self.degree = degree
-        self.gamma = 1.4
+        self.gamma = 1.35
 
         self.comm = MPI.COMM_WORLD
         self.rank = self.comm.Get_rank()
@@ -810,6 +1010,8 @@ class ActiveFlameNT3:
         if self.rank==0:
             print("- Matrix D is assembled.")
         self.matrix = self.D
+
+
 
 
 class ActiveFlameRR:

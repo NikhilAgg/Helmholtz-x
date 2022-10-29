@@ -2,6 +2,7 @@ from dolfinx.fem import Function, FunctionSpace, form, locate_dofs_topological
 from dolfinx.fem.assemble import assemble_scalar
 from dolfinx.mesh import meshtags,locate_entities,create_unit_interval
 from dolfinx.io import XDMFFile, VTXWriter
+from .solver_utils import info
 from mpi4py import MPI
 from scipy import interpolate
 import ufl
@@ -9,15 +10,6 @@ import numpy as np
 import meshio
 import json
 import ast
-
-def info(str):
-    """Only prints information message for once. Useful for logging,
-
-    Args:
-        str ('str'): log entry
-    """
-    if MPI.COMM_WORLD.Get_rank()==0:
-        print(str)
 
 def dict_writer(filename, dictionary, extension = ".txt"):
     """Writes dictionary object into a text file.

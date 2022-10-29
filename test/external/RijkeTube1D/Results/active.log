@@ -1,7 +1,5 @@
-XDMF Mesh is loaded.
-Number of cells:  63,724
-Number of cores:  1 
-
+285.6000456960073 409.92006558721056
+/\ Temperature function is used for passive flame matrices.
 - Passive matrices are assembling..
 - Matrix A is assembled.
 ! Note: It can be faster to use EPS solver.
@@ -18,30 +16,31 @@ Number of cores:  1
 - Matrix D is assembled.
 - PEP solver started.
 - PEP solver converged. Eigenvalue computed.
-+ omega = +1248.28989186  +3.44871290j,  |domega| = 3.63e+00
++ omega = +1243.22432314  +3.37135949j,  |domega| = 3.54e+00
 
 * iter =  2
 - Generating Matrix D..
 - Matrix D is assembled.
 - PEP solver started.
 - PEP solver converged. Eigenvalue computed.
-+ omega = +1247.19925669  +6.83544286j,  |domega| = 3.56e+00
++ omega = +1242.18527193  +6.68307193j,  |domega| = 3.47e+00
 
 * iter =  3
 - Generating Matrix D..
 - Matrix D is assembled.
 - PEP solver started.
 - PEP solver converged. Eigenvalue computed.
-+ omega = +1247.19908775  +6.83556385j,  |domega| = 2.08e-04
++ omega = +1242.18511738  +6.68317959j,  |domega| = 1.88e-04
 
 * iter =  4
 - Generating Matrix D..
 - Matrix D is assembled.
 - PEP solver started.
 - PEP solver converged. Eigenvalue computed.
-+ omega = +1247.19908774  +6.83556385j,  |domega| = 7.25e-09
++ omega = +1242.18511737  +6.68317959j,  |domega| = 5.97e-09
 
-Eigenvalue-> 1247.199088+6.835564j
-Frequency (1/s) -> 198.497900 | Growth Rate (rad/s) ->  6.835564
+Eigenvalue-> 1242.185117+6.683180j
 
-Total Execution Time:  0:02:20.059403
+Frequency -> 197.699902 (1/s) | Growth Rate -> 6.683180 (rad/s) 
+
+Total Execution Time:  0:00:05.298396

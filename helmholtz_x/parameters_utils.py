@@ -98,6 +98,22 @@ def h(mesh, x_f, a_f, degree=1):
         h.interpolate(lambda x: gaussian3D(x,x_f,a_f))
     return h
 
+def half_h(mesh,x_flame,a_flame):
+    V = FunctionSpace(mesh, ("CG", 1))
+    h = Function(V)
+    h.interpolate(lambda x: gaussian3D(x,x_flame,a_flame))
+    x_tab = V.tabulate_dof_coordinates()
+    for i in range(x_tab.shape[0]):
+        midpoint = x_tab[i,:]
+        z = midpoint[2]
+        if z<x_flame[2]:
+            value = 0.
+        else:
+            value = h.x.array[i]
+        h.vector.setValueLocal(i, value)
+    h = normalize(h)
+    return h
+
 def tau_linear(mesh, x_f, a_f, tau_u, tau_d, degree=1):
     V = FunctionSpace(mesh, ("CG", degree))
     tau = Function(V)
@@ -143,9 +159,10 @@ def n_bump(mesh, x_f, a_f, n_value, degree=1):
             n.vector.setValueLocal(i, 0.)
     return n
 
-def c_DG(mesh, x_f, c_u, c_d):
+def c_step(mesh, x_f, c_u, c_d):
     V = FunctionSpace(mesh, ("CG", 1))
     c = Function(V)
+    c.name = "soundspeed"
     x = V.tabulate_dof_coordinates()
     if mesh.geometry.dim == 1:
         x_f = x_f[0]
@@ -164,23 +181,35 @@ def c_DG(mesh, x_f, c_u, c_d):
             c.vector.setValueLocal(i, c_d)
     return c
 
+def gamma_function(mesh, temperature):
+
+    r_gas =  287.1
+    if isinstance(temperature, Function):
+        V = FunctionSpace(mesh, ("CG", 1))
+        cp = Function(V)
+        cv = Function(V)
+        gamma = Function(V)
+        cp.x.array[:] = 973.60091+0.1333*temperature.x.array[:]
+        cv.x.array[:] = cp.x.array - r_gas
+        gamma.x.array[:] = cp.x.array/cv.x.array
+        gamma.x.scatter_forward()
+    else:    
+        cp = 973.60091+0.1333*temperature
+        cv= cp - r_gas
+        gamma = cp/cv
+    return gamma
+
 def sound_speed_variable_gamma(mesh, temperature):
     # https://www.engineeringtoolbox.com/air-speed-sound-d_603.html
     V = FunctionSpace(mesh, ("CG", 1))
     c = Function(V)
-    cp = Function(V)
-    cv = Function(V)
-    gamma = Function(V)
+    c.name = "soundspeed"
     r_gas = 287.1
     if isinstance(temperature, Function):
-        cp.x.array[:] = 973.60091+0.1333*temperature.x.array[:]
-        cv.x.array[:] = cp.x.array - r_gas
-        gamma.x.array[:] = cp.x.array/cv.x.array
+        gamma = gamma_function(mesh,temperature)
         c.x.array[:] = np.sqrt(gamma.x.array[:]*r_gas*temperature.x.array[:])
     else:
-        cp_ = 973.60091+0.1333*temperature
-        cv_ = cp_ - r_gas
-        gamma_ = cp_/cv_
+        gamma_ = gamma_function(mesh,temperature)
         c.x.array[:] = np.sqrt(gamma_ * r_gas * temperature)
     c.x.scatter_forward()
     return c
@@ -189,12 +218,43 @@ def sound_speed(mesh, temperature):
     # https://www.engineeringtoolbox.com/air-speed-sound-d_603.html
     V = FunctionSpace(mesh, ("CG", 1))
     c = Function(V)
+    c.name = "soundspeed"
     if isinstance(temperature, Function):
         c.x.array[:] =  20.05 * np.sqrt(temperature.x.array)
     else:
         c.x.array[:] =  20.05 * np.sqrt(temperature)
     c.x.scatter_forward()
     return c
+
+def temperature_uniform(mesh, temp):
+    V = FunctionSpace(mesh, ("CG", 1))
+    T = Function(V)
+    T.name = "temperature"
+    T.x.array[:]=temp
+    T.x.scatter_forward()
+    return T
+
+def temperature_step(mesh, x_f, T_u, T_d):
+    V = FunctionSpace(mesh, ("CG", 1))
+    T = Function(V)
+    T.name = "temperature"
+    x = V.tabulate_dof_coordinates()
+    if mesh.geometry.dim == 1:
+        x_f = x_f[0]
+        axis = 0
+    elif mesh.geometry.dim == 2:
+        x_f = x_f[0]
+        axis = 0
+    elif mesh.geometry.dim == 3:
+        x_f = x_f[2]
+        axis = 2
+    for i in range(x.shape[0]):
+        midpoint = x[i,:]
+        if midpoint[axis]< x_f:
+            T.vector.setValueLocal(i, T_u)
+        else:
+            T.vector.setValueLocal(i, T_d)
+    return T
 
 def Q(mesh, h, Q_total, degree=1):
     V = FunctionSpace(mesh, ("CG", degree))
