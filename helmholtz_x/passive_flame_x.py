@@ -99,8 +99,9 @@ class PassiveFlame:
                 A_outlet = assemble_scalar(form(self.AreaConstant * self.ds(i)))
                 gamma_outlet_form = form(self.gamma/A_outlet* self.ds(i))
                 gamma_outlet = MPI.COMM_WORLD.allreduce(assemble_scalar(gamma_outlet_form), op=MPI.SUM)
+                
                 Mach = boundary_conditions[i]['ChokedOutlet']
-                R = R = (1-0.5*(gamma_outlet-1)*Mach)/(1+0.5*(gamma_outlet-1)*Mach)
+                R = (1-0.5*(gamma_outlet-1)*Mach)/(1+0.5*(gamma_outlet-1)*Mach)
                 Z = (1+R)/(1-R)
                 integral_C_o = 1j * self.c / Z * inner(self.u, self.v) * self.ds(i)
                 self.integrals_R.append(integral_C_o) 
